@@ -1,4 +1,4 @@
-Django==3.2
+django==3.2
 psycopg2==2.9.5
 djangorestframework==3.12.2
 django-cors-headers~=3.14.0
@@ -9,8 +9,12 @@ requests==2.26.0
 Pillow==8.3.1
 openpyxl==3.0.5
 openpyxl-image-loader==1.0.5
+django-imagekit==5.0.0
 django-filter==2.4.0
-doudian==1.1.0
 celery==5.3.6
-
+redis==5.0.1
+eventlet==0.35.0
+django-celery-beat==2.5.0
+django-celery-results==2.4.0
+lxml==5.1.0
 
