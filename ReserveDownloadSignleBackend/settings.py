@@ -44,6 +44,10 @@ INSTALLED_APPS = [
     'reserve_download',     # 预约下载
     'shop',     # 店铺
     'django_celery_beat',   # celery任务
+    'user',     # 用户
+    'shipper',  # 货主
+    'commodity_category',   # 商品类目
+    'live_play',    # 直播
 ]
 
 MIDDLEWARE = [
