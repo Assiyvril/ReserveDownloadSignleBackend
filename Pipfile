@@ -1,0 +1,31 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django = "==3.2"
+psycopg2 = "==2.9.5"
+djangorestframework = "==3.12.2"
+django-cors-headers = "~=3.14.0"
+django-extensions = "~=3.2.1"
+pyjwt = "==1.7.1"
+djangorestframework-jwt = "==1.11.0"
+requests = "==2.26.0"
+pillow = "==8.3.1"
+openpyxl-image-loader = "==1.0.5"
+django-imagekit = "*"
+django-filter = "==2.4.0"
+openpyxl = "==3.0.5"
+numpy = "==1.22.4"
+celery = "==5.3.6"
+redis = "==5.0.1"
+eventlet = "==0.35.0"
+django-celery-beat = "==2.5.0"
+django-celery-results = "==2.4.0"
+lxml = "5.1.0"
+
+[dev-packages]
+
+[requires]
+python_version = "3.8"
