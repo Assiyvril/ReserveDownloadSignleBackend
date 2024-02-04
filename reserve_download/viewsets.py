@@ -7,12 +7,14 @@ from rest_framework.decorators import action
 
 from order.models import OrderOrder, ItemStatus
 from reserve_download.models import ReserveDownload
+from reserve_download.scripts.gen_excel import LargeDataExport
 from reserve_download.serializers import ReserveDownloadRecordSerializer, FenDianChoiceListSerializer, OrderStatusChoiceListSerializer, \
     ReserveDownloadOrderSerializer
 from shop.models import ShopSerialprefix
 from user.models import AccountMyuser
 from utils.pagination import CustomV3Pagination
 from utils.renderer import CustomV3Renderer
+from celery_task.reserve_download.task import scheduled_download
 
 
 class ReserveDownloadViewSet(viewsets.ModelViewSet):
