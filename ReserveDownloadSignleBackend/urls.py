@@ -16,10 +16,16 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include, re_path
 from django.views.static import serve
-
+from rest_framework import routers
 from ReserveDownloadSignleBackend import settings
+from reserve_download.viewsets import ReserveDownloadViewSet
+
+router = routers.SimpleRouter()
+
+router.register('reserve_download', ReserveDownloadViewSet, basename='reserve_download')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/', include(router.urls)),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
 ]
