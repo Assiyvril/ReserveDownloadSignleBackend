@@ -1,8 +1,10 @@
 """
 celery 配置文件  用于 celery 5.3.6 版本
 """
+import os
 
-REDIS_URL = "redis://127.0.0.1:6379"
+REDIS_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")
+
 broker_url = f"{REDIS_URL}/14"  # 消息代理
 timezone = "Asia/Shanghai"
 result_backend = f"{REDIS_URL}/15"  # 结果存储

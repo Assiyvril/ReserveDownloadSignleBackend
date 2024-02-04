@@ -23,7 +23,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'MEDIA_ROOT')
 SECRET_KEY = 'django-insecure-z)+h373w_pci$dl992ta-4u4^*#oi45uhw#y&3b4z#@9smw7dp'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
@@ -86,6 +86,8 @@ WSGI_APPLICATION = 'ReserveDownloadSignleBackend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
+
+
 DATABASES = {
     # dg相同结构的测试数据库
     'default': {
@@ -93,7 +95,7 @@ DATABASES = {
         'NAME': 'dg3',
         'USER': 'jingyu',
         'PASSWORD': 'ikN48ect64wWcx3p',
-        'HOST': '39.108.75.181',
+        'HOST': os.environ.get('POST_DB_HOST', '39.108.75.181'),
         'PORT': '8258',
     }
 }
