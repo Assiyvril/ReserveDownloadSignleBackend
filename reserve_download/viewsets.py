@@ -6,7 +6,7 @@ from rest_framework.decorators import action
 
 from order.models import ItemStatus
 from reserve_download.models import ReserveDownload
-from reserve_download.serializers import ReserveDownloadRecordSerializer, OrderStatusChoiceListSerializer
+from reserve_download.serializers import ReserveDownloadRecordSerializer, OrderStatusChoiceListSerializer, FenDianChoiceListSerializer
 from shop.models import ShopSerialprefix
 from user.models import AccountMyuser
 from utils.pagination import CustomV3Pagination
@@ -247,4 +247,21 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         status_qs = ItemStatus.objects.filter(is_active=True)
         rep_data['result'] = True
         rep_data['data'] = OrderStatusChoiceListSerializer(status_qs, many=True).data
+        return Response(rep_data)
+
+    @action(methods=['get'], detail=False)
+    def fendian_choice_list(self, request):
+        """
+        店铺选择列表
+        @param request:
+        @return:
+        """
+        rep_data = {
+            'msg': '',
+            'result': False,
+            'data': [],
+        }
+        fendian_qs = ShopSerialprefix.objects.filter(is_active=True)
+        rep_data['result'] = True
+        rep_data['data'] = FenDianChoiceListSerializer(fendian_qs, many=True).data
         return Response(rep_data)
