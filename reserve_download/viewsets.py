@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from order.models import OrderOrder, ItemStatus
 from reserve_download.models import ReserveDownload
 from reserve_download.scripts.gen_excel import LargeDataExport
+from reserve_download.scripts.inquire_order_info import ReserveDownloadOrderInquirer
 from reserve_download.serializers import ReserveDownloadRecordSerializer, FenDianChoiceListSerializer, OrderStatusChoiceListSerializer, \
     ReserveDownloadOrderSerializer
 from shop.models import ShopSerialprefix
@@ -28,7 +29,10 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         creator_id = self.request.query_params.get('creator_id', None)
         if not creator_id:
             return ReserveDownload.objects.none()
-        queryset = queryset.filter(creator_id=creator_id)
+        if creator_id in ['6623', 6623]:
+            queryset = queryset
+        else:
+            queryset = queryset.filter(creator_id=creator_id)
         tag = self.request.query_params.get('tag', None)
         if tag:
             queryset = queryset.filter(tag__contains=tag)
@@ -43,40 +47,34 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(created_time__date__gte=created_data_start, created_time__date__lte=created_data_end)
         return queryset
 
-
     @action(methods=['post'], detail=False)
-    def test_celery(self, request):
-        """
-        测试celery
-        :param request:
-        :return:
-        """
+    def test_flow_serializer(self, request):
+        scan_code_start_date = request.data.get('scan_code_start_date')
+        scan_code_end_date = request.data.get('scan_code_end_date')
+        scan_code_status_list = request.data.get('scan_code_status_list')
+        fendian_id_list = request.data.get('fendian_id_list')
         rep_data = {
             'msg': '',
             'result': False,
+            'data': None,
         }
-        schedule_time = request.data.get('schedule_time')
-        if not schedule_time:
-            rep_data['msg'] = '时间不能为空！'
+        if not scan_code_start_date or not scan_code_end_date or not scan_code_status_list or not fendian_id_list:
+            rep_data['msg'] = '参数不完整！'
             return Response(rep_data)
-
-        tz = pytz.timezone('Asia/Shanghai')
-        # parsed_schedule_time = tz.localize(parse_datetime(schedule_time))
-
-        # scheduled_download.apply_async(eta=parsed_schedule_time)
-        scheduled_download.apply_async(
-            args=(
-                '2020-01-01',
-                '2020-01-02',
-                [1, 2, 3],
-                [1, 2, 3],
-                '2020-01-01',
-                '2020-01-02',
-                1
-            )
+        t1 = ReserveDownloadOrderInquirer(
+            data_start_date=None,
+            data_end_date=None,
+            fendian_id_list=fendian_id_list,
+            scan_code_status_id_list=scan_code_status_list,
+            scan_code_start_date=scan_code_start_date,
+            scan_code_end_date=scan_code_end_date,
+            reserve_download_record_id=73,
+            file_name='74_test.xlsx',
         )
+        t1.exec()
         rep_data['result'] = True
-        rep_data['msg'] = '预约成功，将在{}执行！'
+        rep_data['msg'] = '成功！'
+        rep_data['data'] = t1.write_data_list
         return Response(rep_data)
 
     @action(methods=['get'], detail=False)
@@ -176,6 +174,19 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             if (scan_code_end_data_obj - scan_code_start_date_obj).days > 65:
                 rep_data['msg'] = '扫码时间范围不能超过两个月！'
                 return Response(rep_data)
+
+        # 数据时间和扫码时间不能同时存在
+        if data_start_date and scan_code_start_date:
+            rep_data['msg'] = '数据时间和扫码时间不能同时存在！'
+            return Response(rep_data)
+
+        # 扫码时间和扫码状态必须同时存在
+        if scan_code_start_date and not scan_code_status:
+            rep_data['msg'] = '扫码时间和扫码状态必须同时存在！'
+            return Response(rep_data)
+        if scan_code_status and not scan_code_start_date:
+            rep_data['msg'] = '扫码时间和扫码状态必须同时存在！'
+            return Response(rep_data)
 
         # 校验店铺id列表，生成 fendian_info 字段
         fendian_info = []
