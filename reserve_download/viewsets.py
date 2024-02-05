@@ -48,72 +48,6 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         return queryset
 
     @action(methods=['post'], detail=False)
-    def test_flow_serializer(self, request):
-        scan_code_start_date = request.data.get('scan_code_start_date')
-        scan_code_end_date = request.data.get('scan_code_end_date')
-        scan_code_status_list = request.data.get('scan_code_status_list')
-        fendian_id_list = request.data.get('fendian_id_list')
-        rep_data = {
-            'msg': '',
-            'result': False,
-            'data': None,
-        }
-        if not scan_code_start_date or not scan_code_end_date or not scan_code_status_list or not fendian_id_list:
-            rep_data['msg'] = '参数不完整！'
-            return Response(rep_data)
-        t1 = ReserveDownloadOrderInquirer(
-            data_start_date=None,
-            data_end_date=None,
-            fendian_id_list=fendian_id_list,
-            scan_code_status_id_list=scan_code_status_list,
-            scan_code_start_date=scan_code_start_date,
-            scan_code_end_date=scan_code_end_date,
-            reserve_download_record_id=73,
-            file_name='74_test.xlsx',
-        )
-        t1.exec()
-        rep_data['result'] = True
-        rep_data['msg'] = '成功！'
-        rep_data['data'] = t1.write_data_list
-        return Response(rep_data)
-
-    @action(methods=['get'], detail=False)
-    def test_order_serializer(self, request):
-        rep_data = {
-            'msg': '',
-            'result': False,
-            'file_url': '',
-        }
-        start_time = datetime.datetime.now()
-        order_qs = OrderOrder.objects.all().prefetch_related(
-            'prefix',
-            'category', 'shipper',
-            'zhubo', 'zhuli',
-            'item_status',
-            'play', 'play__changzhang', 'play__banzhang', 'play__shichangzhuanyuan', 'play__zhuli2',
-            'play__zhuli3', 'play__zhuli4', 'play__changkong', 'play__changkong1',
-            'play__changkong2', 'play__changkong3', 'play__kefu1', 'play__kefu2',
-            'play__kefu3', 'play__kefu4',
-            'rel_to_taobao_order', 'rel_to_taobao_order__taobaoorder',
-            'scan_code_flows'
-        )
-        print('测试总量： ', order_qs.count())
-        data = ReserveDownloadOrderSerializer(order_qs, many=True).data
-        end_time = datetime.datetime.now()
-        print('序列化耗时： ', end_time - start_time)
-        file_name = 'test30w.xlsx'
-        print('列表长度： ', len(data), '扩充 360 倍后长度： ', len(data) * 360)
-        export_start_time = datetime.datetime.now()
-        # ReserveDownloadExport(filename=file_name, data_li=data * 360, request=request).to_excel()
-        LargeDataExport(data_list=data * 360, file_name='test_5w.xlsx').save()
-        export_end_time = datetime.datetime.now()
-        print('导出耗时： ', export_end_time - export_start_time)
-        rep_data['result'] = True
-        rep_data['msg'] = '成功！'
-        rep_data['file_url'] = '/media/Export_Excel/' + file_name
-        return Response(rep_data)
-
-    @action(methods=['post'], detail=False)
     def create_task(self, request):
         """
         创建任务
@@ -300,23 +234,6 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 rep_data['msg'] = f'任务创建失败！{e}'
                 ReserveDownload.objects.filter(id=record_obj_id).update(task_status=2, task_result=str(e))
-        return Response(rep_data)
-
-    @action(methods=['get'], detail=False)
-    def fendian_choice_list(self, request):
-        """
-        店铺选择列表
-        @param request:
-        @return:
-        """
-        rep_data = {
-            'msg': '',
-            'result': False,
-            'data': [],
-        }
-        fendian_qs = ShopSerialprefix.objects.filter(is_active=True)
-        rep_data['result'] = True
-        rep_data['data'] = FenDianChoiceListSerializer(fendian_qs, many=True).data
         return Response(rep_data)
 
     @action(methods=['get'], detail=False)
