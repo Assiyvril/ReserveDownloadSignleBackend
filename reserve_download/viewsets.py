@@ -1,16 +1,12 @@
 import datetime
 import random
-import pytz
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
-from order.models import OrderOrder, ItemStatus
+from order.models import ItemStatus
 from reserve_download.models import ReserveDownload
-from reserve_download.scripts.gen_excel import LargeDataExport
-from reserve_download.scripts.inquire_order_info import ReserveDownloadOrderInquirer
-from reserve_download.serializers import ReserveDownloadRecordSerializer, FenDianChoiceListSerializer, OrderStatusChoiceListSerializer, \
-    ReserveDownloadOrderSerializer
+from reserve_download.serializers import ReserveDownloadRecordSerializer, OrderStatusChoiceListSerializer
 from shop.models import ShopSerialprefix
 from user.models import AccountMyuser
 from utils.pagination import CustomV3Pagination
