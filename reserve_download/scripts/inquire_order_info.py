@@ -37,7 +37,7 @@ class ReserveDownloadOrderInquirer:
         # self.flow_queryset = None
         self.data_count = 0
         self.write_data_list = []
-        self.data_type = ''     # 数据类型, order: 订单数据, flow: 流程数据, 根据筛选条件判断数据类型, unknown: 未知
+        self.data_type = 'unknown'     # 数据类型, order: 订单数据, flow: 流程数据, 根据筛选条件判断数据类型, unknown: 未知
         self.serializer_ok = False
         self.serializer_class = None
 
@@ -46,13 +46,16 @@ class ReserveDownloadOrderInquirer:
         判断数据类型
         :return:
         """
-        if self.data_start_date and self.data_end_date and not self.scan_code_start_date and not self.scan_code_end_date:
+        if self.data_start_date and not self.scan_code_start_date:
+            print('只有下单时间')
             self.data_type = 'order'
             self.serializer_class = ReserveDownloadOrderSerializer
-        if self.scan_code_start_date and self.scan_code_end_date and self.scan_code_status_id_list and not self.data_start_date and not self.data_end_date:
+        elif self.scan_code_start_date and not self.data_start_date:
+            print('只有扫码时间')
             self.data_type = 'flow'
             self.serializer_class = ReserveDownloadOrderFlowSerializer
         else:
+            print('数据类型未知')
             self.data_type = 'unknown'
 
     def get_query_set(self):
