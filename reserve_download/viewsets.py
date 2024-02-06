@@ -25,7 +25,8 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         creator_id = self.request.query_params.get('creator_id', None)
         if not creator_id:
             return ReserveDownload.objects.none()
-        if creator_id in ['6623', 6623]:
+        if creator_id in ['6623', 6623, 4841, 2136, '4841', '2136']:
+            # 静宇，秋娣，敏仪  可以查看所有任务
             queryset = queryset
         else:
             queryset = queryset.filter(creator_id=creator_id)
