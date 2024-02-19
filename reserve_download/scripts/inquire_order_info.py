@@ -13,7 +13,7 @@ class ReserveDownloadOrderInquirer:
     """
 
     def __init__(self, data_start_date, data_end_date, fendian_id_list, scan_code_status_id_list, scan_code_start_date,
-                 scan_code_end_date, reserve_download_record_id, file_name, is_test_mode=False):
+                 scan_code_end_date, reserve_download_record_id=None, file_name=None, is_test_mode=False):
         """
         @param data_start_date: 数据开始时间
         @param data_end_date: 数据结束时间
@@ -199,3 +199,15 @@ class ReserveDownloadOrderInquirer:
             return False
         # 生成 excel
         self.gen_excel()
+
+    def only_check_count(self):
+        self.judge_data_type()
+        if self.data_type == 'unknown':
+            return False, '根据筛选条件判断数据类型错误，无法校验数量'
+        self.get_query_set()
+        self.get_data_count()
+        if self.data_count > 50000:
+            return False, f'数据量为{self.data_count}, 超过50000条，禁止导出，请修改筛选条件'
+        if self.data_count == 0:
+            return False, '数据量为0，请修改筛选条件'
+        return True, f'数据量为{self.data_count}'

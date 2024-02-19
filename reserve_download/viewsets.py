@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 
 from order.models import ItemStatus
 from reserve_download.models import ReserveDownload
+from reserve_download.scripts.inquire_order_info import ReserveDownloadOrderInquirer
 from reserve_download.serializers import ReserveDownloadRecordSerializer, OrderStatusChoiceListSerializer, FenDianChoiceListSerializer
 from shop.models import ShopSerialprefix
 from user.models import AccountMyuser
@@ -56,6 +57,7 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             'result': False,
             'data': None,
         }
+
         fendian_id_list = request.data.get('fendian_id_list')
         data_start_date = request.data.get('data_start_date')
         data_end_date = request.data.get('data_end_date')
@@ -167,6 +169,20 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             """
             无需预约定时，立即执行
             """
+            # 校验数据量
+            inquire = ReserveDownloadOrderInquirer(
+                data_start_date=data_start_date,
+                data_end_date=data_end_date,
+                fendian_id_list=fendian_id_list,
+                scan_code_status_id_list=scan_code_status,
+                scan_code_start_date=scan_code_start_date,
+                scan_code_end_date=scan_code_end_date,
+            )
+            check_re, msg = inquire.only_check_count()
+            # print('数据量：', check_re, msg)
+            if not check_re:
+                rep_data['msg'] = f'任务创建失败！{msg}'
+                return Response(rep_data)
             record_obj_id = ReserveDownload.objects.create(
                 creator=creator_obj,
                 filter_condition={
