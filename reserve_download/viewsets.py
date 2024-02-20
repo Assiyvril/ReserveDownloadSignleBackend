@@ -170,6 +170,7 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             'end_date': end_date,
             'date_type': date_type,
             'scan_code_status': scan_code_status,
+            'date_type_text': '下单日期' if date_type == 'order_date' else '扫码日期',
         }
 
         """  是否预约定时  """
@@ -188,6 +189,7 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             if not count_check_re:
                 ret_data['is_pass'] = False
                 ret_data['msg'] = msg
+                return ret_data
         else:
             # 预约定时
             ret_data['is_future'] = True
