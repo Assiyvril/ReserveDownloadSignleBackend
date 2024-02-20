@@ -375,7 +375,6 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             'date_type': date_type,
             'scan_code_status': scan_code_status,
         }
-        ret_data['is_pass'] = True
 
         """  是否预约定时  """
         now_date_obj = datetime.datetime.now().date()
@@ -397,6 +396,7 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             # 预约定时
             ret_data['is_future'] = True
             ret_data['future_exec_time'] = (end_date_obj + datetime.timedelta(days=1)).strftime('%Y-%m-%d 00:01:00')
+        ret_data['is_pass'] = True
         return ret_data
 
     @action(methods=['post'], detail=False)
