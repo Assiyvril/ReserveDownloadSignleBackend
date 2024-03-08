@@ -105,8 +105,8 @@ class OrderPlay(models.Model):
     zhibo_type = models.IntegerField('播货类型', blank=True, null=True, default=0, choices=ZHI_BO_TYPE_CHOICES)
 
     shop_id = models.IntegerField('商户', default=2)
-    changzhang = models.ForeignKey(AccountMyuser, blank=True, null=True, on_delete=models.DO_NOTHING, verbose_name='场长')
-    changzhang1 = models.ForeignKey(AccountMyuser, blank=True, null=True, on_delete=models.DO_NOTHING, verbose_name='场长2')
+    changzhang = models.ForeignKey(AccountMyuser, blank=True, null=True, on_delete=models.DO_NOTHING,related_name='changzhang_play', verbose_name='场长')
+    changzhang1 = models.ForeignKey(AccountMyuser, blank=True, null=True, on_delete=models.DO_NOTHING, related_name='changzhang1_play', verbose_name='场长2')
 
     banzhang = models.ForeignKey(AccountMyuser, blank=True, null=True, on_delete=models.DO_NOTHING, verbose_name='班次长', related_name='banzhang')
     # 场控
