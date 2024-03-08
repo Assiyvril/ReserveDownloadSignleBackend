@@ -106,6 +106,8 @@ class OrderPlay(models.Model):
 
     shop_id = models.IntegerField('商户', default=2)
     changzhang = models.ForeignKey(AccountMyuser, blank=True, null=True, on_delete=models.DO_NOTHING, verbose_name='场长')
+    changzhang1 = models.ForeignKey(AccountMyuser, blank=True, null=True, on_delete=models.DO_NOTHING, verbose_name='场长2')
+
     banzhang = models.ForeignKey(AccountMyuser, blank=True, null=True, on_delete=models.DO_NOTHING, verbose_name='班次长', related_name='banzhang')
     # 场控
     changkong = models.ForeignKey(AccountMyuser, blank=True, null=True, on_delete=models.DO_NOTHING, verbose_name='场控1', related_name='changkong')

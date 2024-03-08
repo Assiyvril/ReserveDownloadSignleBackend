@@ -114,6 +114,9 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
     ke_fu_3 = serializers.CharField(source='play.kefu3.first_name', read_only=True, help_text='客服3', label='客服3', default='')
     ke_fu_4 = serializers.CharField(source='play.kefu4.first_name', read_only=True, help_text='客服4', label='客服4', default='')
 
+    chang_zhang2_name = serializers.CharField(source='play.changzhang1.first_name', read_only=True, help_text='厂长2', label='厂长2', default='')
+    code_scaner = serializers.SerializerMethodField(read_only=True, help_text='扫码人', label='扫码人')
+
     def get_kickback(self, obj):
         """
         扣点, 根据店铺类型，判断货主的扣点
@@ -240,7 +243,7 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
             '货主证书', '利润', '扣点调否', '调扣ID', '差异扣点', '售后金额', '备注', '录单员', '系统状态', '退款金额', '退款状态', '自动状态',
             '流程最近更新者', '订单更新时间', '订单创建时间', '支付方式', '交易截图', '标题货品码', '是否打印', '是否加帐',
             '证书', '发货记录', '货主备注', '场次ID', '班次时间', '拉新专员', '图片地址',
-            '扫码状态', '扫码人', '扫码历史', '品检状态', '品检类型', '品检备注', '品检人', '品检时间', '预售订单',
+            '扫码状态', '扫码历史', '品检状态', '品检类型', '品检备注', '品检人', '品检时间', '预售订单',
             '待结ID', '结扣ID', '结算ID'
         ]
         ret = super(ReserveDownloadOrderSerializer, self).to_representation(instance)
@@ -258,6 +261,12 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
             return '无'
         return order_flow_obj.created_time.strftime('%Y-%m-%d %H:%M:%S')
 
+    def get_code_scaner(self, obj):
+        order_flow_obj = obj.scan_code_flows.all().order_by('-created_time').first()
+        if not order_flow_obj:
+            return '无'
+        return order_flow_obj.owner.first_name
+
     def get_ban_ci(self, obj):
         return '无'
 
@@ -269,7 +278,7 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
             'item_status_name', 'taobao_tbno', 'yhq', 'itemcode', 'chang_zhang_name', 'zhibo_type_text',
             'title', 'taobao_order_pay_time', 'link_type', 'scan_code_time', 'ban_ci', 'ban_ci_zhang',
             'shi_chang_ren_yuan', 'zhu_li_2', 'zhu_li_3', 'zhu_li_4', 'chang_kong_1', 'chang_kong_2', 'chang_kong_3',
-            'chang_kong_4', 'ke_fu_1', 'ke_fu_2', 'ke_fu_3', 'ke_fu_4',
+            'chang_kong_4', 'ke_fu_1', 'ke_fu_2', 'ke_fu_3', 'ke_fu_4', 'chang_zhang2_name', 'code_scaner'
         ]
 
 
@@ -351,6 +360,9 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
     yhq = serializers.FloatField(source='order.yhq', read_only=True, help_text='优惠券', label='优惠券')
     itemcode = serializers.CharField(source='order.itemcode', read_only=True, help_text='货品码', label='货品码')
     title = serializers.CharField(source='order.title', read_only=True, help_text='标题', label='标题')
+
+    code_scaner = serializers.CharField(source='owner.first_name', read_only=True, help_text='扫码人', label='扫码人', default='')
+    chang_zhang2_name = serializers.CharField(source='order.play.changzhang1.first_name', read_only=True, help_text='厂长2', label='厂长2', default='')
 
     def get_kickback(self, obj):
         """
@@ -478,7 +490,7 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
             '货主证书', '利润', '扣点调否', '调扣ID', '差异扣点', '售后金额', '备注', '录单员', '系统状态', '退款金额', '退款状态', '自动状态',
             '流程最近更新者', '订单更新时间', '订单创建时间', '支付方式', '交易截图', '标题货品码', '是否打印', '是否加帐',
             '证书', '发货记录', '货主备注', '场次ID', '班次时间', '拉新专员', '图片地址',
-            '扫码人', '扫码历史', '品检状态', '品检类型', '品检备注', '品检人', '品检时间', '预售订单',
+            '扫码历史', '品检状态', '品检类型', '品检备注', '品检人', '品检时间', '预售订单',
             '待结ID', '结扣ID', '结算ID'
         ]
         ret = super(ReserveDownloadOrderFlowSerializer, self).to_representation(instance)
@@ -498,5 +510,5 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
             'item_status_name', 'taobao_tbno', 'yhq', 'itemcode', 'chang_zhang_name', 'zhibo_type_text',
             'title', 'taobao_order_pay_time', 'link_type', 'scan_code_time', 'ban_ci', 'ban_ci_zhang',
             'shi_chang_ren_yuan', 'zhu_li_2', 'zhu_li_3', 'zhu_li_4', 'chang_kong_1', 'chang_kong_2', 'chang_kong_3',
-            'chang_kong_4', 'ke_fu_1', 'ke_fu_2', 'ke_fu_3', 'ke_fu_4',
+            'chang_kong_4', 'ke_fu_1', 'ke_fu_2', 'ke_fu_3', 'ke_fu_4', 'chang_zhang2_name', 'code_scaner'
         ]
