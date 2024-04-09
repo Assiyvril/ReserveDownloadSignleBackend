@@ -48,7 +48,7 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         return queryset
 
     @action(methods=['get'], detail=False)
-    def status_choice_list(self, request):
+    def scan_code_status_choice_list(self, request):
         """
         扫码状态
         @param request:
