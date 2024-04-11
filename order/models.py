@@ -18,9 +18,19 @@ timezone.activate('Asia/Shanghai')
 
 class ItemStatus(models.Model):
 
+    STATUS_TYPE_CHOICE = (
+        ('0', u'未退款'),
+        ('1', u'跑单退款'),
+        ('2', u'售后退款'),
+        ('3', u'待减账退款'),
+        ('-1', u'----------'),
+        ('4', u'可结算状态'),
+    )
+
     shop_id = models.IntegerField(blank=True, null=True, default=2)
     name = models.CharField(u'名称', max_length=31)
     notes = models.CharField(u'说明', max_length=63, null=True, blank=True)
+    statustype = models.CharField(u'状态类型', choices=STATUS_TYPE_CHOICE, default='0', max_length=2)
     sort = models.PositiveIntegerField(u'排序', default=200, help_text=u'从小到大显示')
     created_time = models.DateTimeField(u'创建时间', auto_now_add=True)
     is_refund = models.BooleanField(u'是否退款', default=False, help_text=u'是否退款')
