@@ -307,13 +307,16 @@ class FenDianChoiceListSerializer(serializers.ModelSerializer):
         fields = ['id', 'name']
 
 
-class OrderStatusChoiceListSerializer(serializers.ModelSerializer):
+class OrderScanCodeStatusChoiceListSerializer(serializers.ModelSerializer):
     """
     订单状态选择列表
     """
+    value = serializers.IntegerField(source='id', read_only=True, help_text='状态id', label='状态id')
+    label = serializers.CharField(source='name', read_only=True, help_text='状态名称', label='状态名称')
+
     class Meta:
         model = ItemStatus
-        fields = ['id', 'name']
+        fields = ['value', 'label']
 
 
 class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):

@@ -6,10 +6,11 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
+from commodity_category.models import ShopCategory
 from order.models import ItemStatus
 from reserve_download.models import ReserveDownload
 from reserve_download.scripts.inquire_order_info import ReserveDownloadOrderInquirer
-from reserve_download.serializers import ReserveDownloadRecordSerializer, OrderStatusChoiceListSerializer, FenDianChoiceListSerializer
+from reserve_download.serializers import ReserveDownloadRecordSerializer, OrderScanCodeStatusChoiceListSerializer, FenDianChoiceListSerializer
 from shop.models import ShopSerialprefix
 from user.models import AccountMyuser
 from utils.pagination import CustomV3Pagination
@@ -60,8 +61,52 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             'data': [],
         }
         status_qs = ItemStatus.objects.filter(is_active=True)
+        # rep_data['result'] = True
+        # rep_data['data'] = OrderScanCodeStatusChoiceListSerializer(status_qs, many=True).data
+
+        # 分组，按照 statustype 分组 0 1 2 3 4
+        # 0，未退款
+        wei_tui_kuan_qs = status_qs.filter(statustype='0')
+        wei_tui_kuan_data = {
+            'value': 0,
+            'label': '未退款',
+            'children': OrderScanCodeStatusChoiceListSerializer(wei_tui_kuan_qs, many=True).data,
+        }
+        rep_data['data'].append(wei_tui_kuan_data)
+        # 1, 跑单退款
+        pao_dan_tui_kuan_qs = status_qs.filter(statustype='1')
+        pao_dan_tui_kuan_data = {
+            'value': 1,
+            'label': '跑单退款',
+            'children': OrderScanCodeStatusChoiceListSerializer(pao_dan_tui_kuan_qs, many=True).data,
+        }
+        rep_data['data'].append(pao_dan_tui_kuan_data)
+        # 2, 售后退款
+        shou_hou_tui_kuan_qs = status_qs.filter(statustype='2')
+        shou_hou_tui_kuan_data = {
+            'value': 2,
+            'label': '售后退款',
+            'children': OrderScanCodeStatusChoiceListSerializer(shou_hou_tui_kuan_qs, many=True).data,
+        }
+        rep_data['data'].append(shou_hou_tui_kuan_data)
+        # 3, 待减账退款
+        dai_jian_zhang_tui_kuan_qs = status_qs.filter(statustype='3')
+        dai_jian_zhang_tui_kuan_data = {
+            'value': 3,
+            'label': '待减账退款',
+            'children': OrderScanCodeStatusChoiceListSerializer(dai_jian_zhang_tui_kuan_qs, many=True).data,
+        }
+        # 4, 可结算状态
+        ke_jie_suan_qs = status_qs.filter(statustype='4')
+        ke_jie_suan_data = {
+            'value': 4,
+            'label': '可结算状态',
+            'children': OrderScanCodeStatusChoiceListSerializer(ke_jie_suan_qs, many=True).data,
+        }
+        rep_data['data'].append(ke_jie_suan_data)
+
         rep_data['result'] = True
-        rep_data['data'] = OrderStatusChoiceListSerializer(status_qs, many=True).data
+
         return Response(rep_data)
 
     @action(methods=['get'], detail=False)
@@ -79,6 +124,18 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         fendian_qs = ShopSerialprefix.objects.filter(is_active=True)
         rep_data['result'] = True
         rep_data['data'] = FenDianChoiceListSerializer(fendian_qs, many=True).data
+        return Response(rep_data)
+
+    @action(methods=['get'], detail=False)
+    def commodity_category_choice_list(self, request):
+        """
+        商品分类选择列表，树状结构
+        """
+        rep_data = {
+            'msg': '',
+            'result': True,
+            'data': ShopCategory.get_category_tree_data(shop=2),
+        }
         return Response(rep_data)
 
     def check_create_params(self, request_data):
