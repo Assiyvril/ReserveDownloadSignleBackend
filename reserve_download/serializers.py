@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from order.models import ItemStatus, OrderTaobaoorder, OrderOrder, OrderFlow
 from reserve_download.models import ReserveDownload
+from shipper.models import ShopShipper
 from shop.models import ShopSerialprefix
 from user.models import AccountMyuser
 
@@ -515,3 +516,42 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
             'shi_chang_ren_yuan', 'zhu_li_2', 'zhu_li_3', 'zhu_li_4', 'chang_kong_1', 'chang_kong_2', 'chang_kong_3',
             'chang_kong_4', 'ke_fu_1', 'ke_fu_2', 'ke_fu_3', 'ke_fu_4', 'chang_zhang2_name', 'code_scaner'
         ]
+
+
+class ShopShipperChoiceListSerializer(serializers.ModelSerializer):
+    """
+    小货主下拉列表，
+    id 和 name
+    """
+    class Meta:
+        model = ShopShipper
+        fields = ['id', 'name']
+
+
+class ZhuboChoiceListSerializer(serializers.ModelSerializer):
+    """
+    主播下拉列表，
+    id 和 name
+    """
+    name = serializers.SerializerMethodField(read_only=True, help_text='主播名称', label='主播名称')
+
+    def get_name(self, obj):
+        nick_name = obj.first_name or '无姓名'
+        stage_name = obj.notes or '无艺名'
+        name = nick_name + '(' + stage_name + ')'
+        return name
+
+    class Meta:
+        model = AccountMyuser
+        fields = ['id', 'name']
+
+
+class UserFirstNameChoiceListSerializer(serializers.ModelSerializer):
+    """
+    普通用户下拉列表
+    """
+    name = serializers.CharField(source='first_name', read_only=True, help_text='市场专员/厂长名称', label='市场专员名称')
+
+    class Meta:
+        model = AccountMyuser
+        fields = ['id', 'name']

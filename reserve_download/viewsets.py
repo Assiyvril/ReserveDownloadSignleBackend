@@ -10,7 +10,9 @@ from commodity_category.models import ShopCategory
 from order.models import ItemStatus
 from reserve_download.models import ReserveDownload
 from reserve_download.scripts.inquire_order_info import ReserveDownloadOrderInquirer
-from reserve_download.serializers import ReserveDownloadRecordSerializer, OrderScanCodeStatusChoiceListSerializer, FenDianChoiceListSerializer
+from reserve_download.serializers import ReserveDownloadRecordSerializer, OrderScanCodeStatusChoiceListSerializer, FenDianChoiceListSerializer, \
+    ZhuboChoiceListSerializer, ShopShipperChoiceListSerializer, UserFirstNameChoiceListSerializer
+from shipper.models import ShopShipper
 from shop.models import ShopSerialprefix
 from user.models import AccountMyuser
 from utils.pagination import CustomV3Pagination
@@ -137,6 +139,55 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             'data': ShopCategory.get_category_tree_data(shop=2),
         }
         return Response(rep_data)
+
+    @action(methods=['POST'], detail=False)
+    def get_four_choice_list(self, request):
+        """
+        获取四个选择列表: 主播 type=3、货主、市场专员 type=17、扫码人员 type=1,2,14,5
+        通过店铺id获取
+        """
+        rep_data = {
+            'msg': '',
+            'result': False,
+            'zhubo_choice_list': [],
+            'shipper_choice_list': [],
+            'shichangzhuanyuan_choice_list': [],
+            'scanner_choice_list': [],
+        }
+
+        fendian_id_list = request.data.get('fendian_id_list')
+        department_id = request.data.get('department_id', None)
+
+        if not fendian_id_list:
+            rep_data['msg'] = '店铺id列表不能为空！'
+            return Response(rep_data)
+        if not department_id:
+            rep_data['msg'] = '部门id不能为空！'
+            return Response(rep_data)
+
+        # 所有人员
+        all_people_qs = AccountMyuser.objects.filter(
+            type__in=['1', '2', '3', '5', '14', '17'],
+            prefix__id__in=fendian_id_list,
+            is_active=True,
+        )
+        # 主播
+        zhubo_qs = all_people_qs.filter(type='3')
+        # 市场专员
+        shichangzhuanyuan_qs = all_people_qs.filter(type='17')
+        # 扫码人员
+        scanner_qs = all_people_qs.filter(type__in=['1', '2', '14', '5'])
+
+        # 货主
+        shipper_qs = ShopShipper.objects.filter(is_active=True, department__id=department_id)
+
+        rep_data['zhubo_choice_list'] = ZhuboChoiceListSerializer(zhubo_qs, many=True).data
+        rep_data['shipper_choice_list'] = ShopShipperChoiceListSerializer(shipper_qs, many=True).data
+        rep_data['shichangzhuanyuan_choice_list'] = UserFirstNameChoiceListSerializer(shichangzhuanyuan_qs, many=True).data
+        rep_data['scanner_choice_list'] = UserFirstNameChoiceListSerializer(scanner_qs, many=True).data
+        rep_data['result'] = True
+        return Response(rep_data)
+
 
     def check_create_params(self, request_data):
         """
