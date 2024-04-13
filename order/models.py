@@ -47,6 +47,13 @@ class ItemStatus(models.Model):
 
 # 系统订单数据模型
 class OrderOrder(models.Model):
+    CHECK_GOODS_CHOICE = (
+        (0,  '未品检'),
+        (1,  '合格'),
+        (2,  '不合格'),
+        (3,  '不合格入库'),
+    )
+
     # ### 基础信息 ###
     title = models.CharField('宝贝标题', max_length=255, blank=True, null=True, db_column='guding_title')
     quantity = models.SmallIntegerField('数量')
@@ -123,6 +130,9 @@ class OrderOrder(models.Model):
 
     shipper_memo = models.CharField('货主备注', max_length=2550, blank=True, null=True)
     is_guding_url = models.IntegerField('是否固定链接', blank=True, null=True, default=1)
+
+    # 2024-04-13 补充字段
+    is_checkgoods = models.IntegerField('品检情况', blank=True, null=True, choices=CHECK_GOODS_CHOICE)
 
     class Meta:
         managed = False
