@@ -14,16 +14,44 @@
 - 市场专员  OrderOrder -> OrderPlay -> shichangzhuanyuan
 
 
-- 品检状态 ？ OrderOrder  的 is_checkgoods （无代码）
+
+
 - 是否发货 ？ ItemStatus 的 sendgoodstype =1 为发货， =0 为未发货， （无代码）
 
 - 员工 ？  OrderFlow 的 owner 和 OrderOrder 的 creator （改为扫码人）
-- 平台状态  ？  OrderOrder 中的 autostatus （无代码）
-- ~~金额调整 ？ OrderOrder 的 finance_payamount （无代码）（搁置）~~
 
-- 订单情况 ？ OrderOrder 的 status （订单核对状态）（无代码）
+
+
+
+- 品检状态 ？ OrderOrder  的 is_checkgoods （无代码） 
+品检合格   check1  is_checkgoods = 1
+不合格 check2  is_checkgoods = 2
+不合格入库  check3 is_checkgoods = 3
+未品检 check0  is_checkgoods = 0
+全部 check4 is_checkgoods > 0
+
+
+- 平台状态  ？  OrderOrder 中的 autostatus （无代码）
+订单未退 a1,  autostatus ！= 2
+订单退款 a2,  autostatus = 2
+部分退款 a3,  autostatus = 11
+
+
+- 订单情况 ？ OrderOrder 的 status （订单核对状态）（无代码） 直播订单模块中的 isdelete
     - is_presale  
     - tradetype  交易类型
     - balancetype
     - is_bindgoods
     - is_reorder
+
+正常订单  d1    order_order.status  ！= '0'
+被删订单  d2    order_order.status='0'
+预售订单  d3    order_order.status<>'0' and order_order.is_presale=true
+超福订单  d4    order_order.status<>'0' and order_order.tradetype=1
+线下发货  d5    order_order.status<>'0' and (order_order.tradetype=0 or  order_order.tradetype isnull) and order_order.amount<=30
+成本结算  d6    order_order.status<>'0' and order_order.balancetype=2
+扣点结算  d7    order_order.status<>'0' and (order_order.balancetype<>2 or order_order.balancetype isnull
+特殊订单  d8    order_order.status<>'0' and order_order.tradetype=2
+需绑货品  d9    and order_order.status<>'0' and order_order.is_bindgoods=true
+重录订单  d10   and order_order.status<>'0' and order_order.is_reorder=1
+

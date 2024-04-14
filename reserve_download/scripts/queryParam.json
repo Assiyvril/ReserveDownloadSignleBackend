@@ -1,0 +1,92 @@
+{
+    "date_type": "order_date",
+    "start_date": "2024-04-02",
+    "end_date": "2024-04-03",
+    "fen_dian_id_list": [
+        256,
+        161
+    ],
+    "scan_code_status_id_list": [
+        [
+            0,
+            11
+        ],
+        [
+            0,
+            34
+        ],
+        [
+            0,
+            37
+        ],
+        [
+            0,
+            65
+        ],
+        [
+            0,
+            66
+        ]
+    ],
+    "task_tag": "343ewfdsgfred",
+    "is_history": true,
+    "commodity_category_id_list": [
+        194,
+        197,
+        196,
+        198,
+        195,
+        272,
+        566,
+        565,
+        204,
+        207,
+        206,
+        208,
+        205
+    ],
+    "scanner_id_list": [
+        1045,
+        7163,
+        7609,
+        7798
+    ],
+    "live_shift_list": [
+        2,
+        3,
+        4
+    ],
+    "platform_status_list": [
+        "all_return",
+        "part_return"
+    ],
+    "is_Guding_link": false,
+    "has_certificate": false,
+    "shichangzhuanyuan_id_list": [
+        4274,
+        139,
+        7976
+    ],
+    "pinjianzhuangtai_list": [
+        "eligibility"
+    ],
+    "is_ship": true,
+    "order_situation_list": [
+        "deleted_order",
+        "presale_order",
+        "super_welfare_order",
+        "offline_ship"
+    ],
+    "zhubo_id_list": [
+        7565,
+        7799,
+        7963,
+        6705
+    ],
+    "shipper_id_list": [
+        6430,
+        2509,
+        6402,
+        6655
+    ]
+}

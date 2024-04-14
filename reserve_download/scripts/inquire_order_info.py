@@ -186,3 +186,124 @@ class ReserveDownloadOrderInquirer:
         if self.data_count == 0:
             return False, '数据量为0，请修改筛选条件'
         return True, f'数据量为{self.data_count}'
+
+
+query_param_example = {
+    "date_type": "order_date",
+    "start_date": "2024-04-02",
+    "end_date": "2024-04-03",
+    "fen_dian_id_list": [
+        256,
+        161
+    ],
+    "scan_code_status_id_list": [
+        [
+            0,
+            11
+        ],
+        [
+            0,
+            34
+        ],
+        [
+            0,
+            37
+        ],
+        [
+            0,
+            65
+        ],
+        [
+            0,
+            66
+        ]
+    ],
+    "task_tag": "343ewfdsgfred",
+    "is_history": False,
+    "commodity_category_id_list": [
+        194,
+        197,
+        196,
+        198,
+        195,
+        272,
+        566,
+        565,
+        204,
+        207,
+        206,
+        208,
+        205
+    ],
+    "scanner_id_list": [
+        1045,
+        7163,
+        7609,
+        7798
+    ],
+    "live_shift_list": [
+        2,
+        3,
+        4
+    ],
+    "platform_status_list": [
+        "all_return",
+        "part_return"
+    ],
+    "is_Guding_link": False,
+    "has_certificate": False,
+    "shichangzhuanyuan_id_list": [
+        4274,
+        139,
+        7976
+    ],
+    "pinjianzhuangtai_list": [
+        "eligibility"
+    ],
+    "is_ship": True,
+    "order_situation_list": [
+        "deleted_order",
+        "presale_order",
+        "super_welfare_order",
+        "offline_ship"
+    ],
+    "zhubo_id_list": [
+        7565,
+        7799,
+        7963,
+        6705
+    ],
+    "shipper_id_list": [
+        6430,
+        2509,
+        6402,
+        6655
+    ]
+}
+
+
+class NewInquire(object):
+    """
+    新查询器 2024-04-14
+    """
+
+    def __init__(self, reserve_download_record_id, file_name, query_param_dict):
+        """
+        :param reserve_download_record_id:  预约下载记录id
+        :param file_name:            文件名
+        :param query_param_dict:    查询参数字典
+        """
+        self.reserve_download_record_id = reserve_download_record_id
+        self.file_name = file_name
+        self.query_param_dict = query_param_dict
+        self.queryset = None
+        self.data_count = 0
+        self.write_data_list = []
+        self.serializer_ok = False
+        self.serializer_class = None
+
+    def get_order_queryset(self):
+        """
+        筛选 OrderOrder 查询集
+        :return:
+        """

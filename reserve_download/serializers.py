@@ -321,6 +321,10 @@ class OrderScanCodeStatusChoiceListSerializer(serializers.ModelSerializer):
 
 
 class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
+    """
+    导出订单 - 历史状态
+    以 OrderFlow 为核心
+    """
     order_day = serializers.CharField(source='order.day', read_only=True, help_text='下单日期', label='下单日期')
     fen_dian_name = serializers.CharField(source='order.prefix.name', read_only=True, help_text='店铺名称', label='店铺名称', default='')
     category_name = serializers.CharField(source='order.category.name', read_only=True, help_text='货品', label='货品', default='')
