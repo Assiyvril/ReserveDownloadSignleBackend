@@ -7,7 +7,7 @@ from reserve_download.serializers import ReserveDownloadOrderSerializer, Reserve
 from order.models import OrderOrder, OrderFlow
 
 
-class ReserveDownloadOrderInquirer:
+class ReserveDownloadOrderInquirerOld:
     """
     查询器
     """
@@ -282,7 +282,7 @@ query_param_example = {
 }
 
 
-class NewInquire(object):
+class ReserveDownloadOrderInquirer(object):
     """
     新查询器 2024-04-14
     """
@@ -302,8 +302,310 @@ class NewInquire(object):
         self.serializer_ok = False
         self.serializer_class = None
 
-    def get_order_queryset(self):
+    def update_task_status(self, task_status_num=None, data_count=None, task_result_str=None, is_success=None):
+        """
+        更新任务状态
+        :param task_status_num:     状态阶段
+        :param data_count:          数据量
+        :param task_result_str:     任务结果
+        :param is_success:          是否成功
+        :return:
+        有哪个参数就更新哪个参数
+        """
+        update_dict = {}
+        if task_status_num:
+            update_dict['task_status'] = task_status_num
+        if data_count:
+            update_dict['data_count'] = data_count
+        if task_result_str:
+            update_dict['task_result'] = task_result_str
+        if is_success:
+            update_dict['is_success'] = is_success
+        ReserveDownload.objects.filter(
+            id=self.reserve_download_record_id
+        ).update(
+            **update_dict
+        )
+
+    def inquire_queryset(self):
         """
         筛选 OrderOrder 查询集
         :return:
         """
+        is_history = self.query_param_dict.get('is_history', False)
+        date_type = self.query_param_dict.get('date_type', None)
+        start_date = self.query_param_dict.get('start_date', None)
+        end_date = self.query_param_dict.get('end_date', None)
+        fen_dian_id_list = self.query_param_dict.get('fen_dian_id_list', None)
+        scan_code_status_id_list = self.query_param_dict.get('scan_code_status_id_list', None)
+        commodity_category_id_list = self.query_param_dict.get('commodity_category_id_list', None)
+        scanner_id_list = self.query_param_dict.get('scanner_id_list', None)
+        live_shift_list = self.query_param_dict.get('live_shift_list', None)
+        platform_status_list = self.query_param_dict.get('platform_status_list', None)
+        is_Guding_link = self.query_param_dict.get('is_Guding_link', None)
+        has_certificate = self.query_param_dict.get('has_certificate', None)
+        shichangzhuanyuan_id_list = self.query_param_dict.get('shichangzhuanyuan_id_list', None)
+        pinjianzhuangtai_list = self.query_param_dict.get('pinjianzhuangtai_list', None)
+        is_ship = self.query_param_dict.get('is_ship')
+        order_situation_list = self.query_param_dict.get('order_situation_list', None)
+        zhubo_id_list = self.query_param_dict.get('zhubo_id_list', None)
+        shipper_id_list = self.query_param_dict.get('shipper_id_list', None)
+
+        if is_history:
+            # 导出历史状态，以 order flow 为核心
+            self.serializer_class = ReserveDownloadOrderFlowSerializer
+            self.queryset = self.get_order_flow_queryset()
+        else:
+            # 不导出历史状态，以 order order 为核心
+            self.serializer_class = ReserveDownloadOrderSerializer
+            self.queryset = self.get_order_queryset()
+
+    @staticmethod
+    def get_order_queryset(date_type, start_date, end_date, fen_dian_id_list, scan_code_status_id_list, commodity_category_id_list,
+                           scanner_id_list, live_shift_list, platform_status_list, is_Guding_link, has_certificate, shichangzhuanyuan_id_list,
+                           pinjianzhuangtai_list, is_ship, order_situation_list, zhubo_id_list, shipper_id_list):
+
+        """查询 OrderOrder 查询集 , 不再排除 status=0 的订单，"""
+        if date_type == 'order_date':
+            order_queryset = OrderOrder.objects.filter(
+                day__gte=start_date,
+                day__lte=end_date,
+                prefix_id__in=fen_dian_id_list,
+            )
+            # 先判断 需要从 OrderFlow 逆向查询到 OrderOrder 的条件： scanner_id_list 扫码人， scan_code_status_id_list 扫码状态，
+            need_reverse_query = False  # 是否需要逆向查询
+            order_flow_qs = OrderFlow.objects.filter(
+                order__in=order_queryset
+            )
+            if scan_code_status_id_list:
+                # 有扫码状态的情况
+                need_reverse_query = True
+                order_flow_qs = order_flow_qs.objects.filter(
+                    status_id__in=scan_code_status_id_list,
+                    order__in=order_queryset
+                )
+            if scanner_id_list:
+                # 有扫码人的情况
+                need_reverse_query = True
+                order_flow_qs = order_flow_qs.objects.filter(
+                    owner__id__in=scanner_id_list,
+                    order__in=order_queryset
+                )
+            if need_reverse_query:
+                order_queryset = order_queryset.filter(
+                    id__in=order_flow_qs.values_list('order_id', flat=True)
+                )
+
+        elif date_type == 'scan_date':
+            """若是扫码时间，则用 OrderFlow 查出 OrderOrder """
+            order_flow_qs = OrderFlow.objects.filter(
+                created_time__date__gte=start_date,
+                created_time__date__lte=end_date,
+                order__prefix_id__in=fen_dian_id_list,
+            )
+            if scan_code_status_id_list:
+                # 有扫码状态的情况
+                order_flow_qs = order_flow_qs.filter(
+                    status_id__in=scan_code_status_id_list,
+                )
+            if scanner_id_list:
+                # 有扫码人的情况
+                order_flow_qs = order_flow_qs.filter(
+                    owner__id__in=scanner_id_list,
+                )
+            order_queryset = OrderOrder.objects.filter(
+                id__in=order_flow_qs.values_list('order_id', flat=True)
+            ).distinct('id')
+        else:
+            order_queryset = OrderOrder.objects.none()
+
+        # 进一步对 order_queryset 进行筛选
+        # 商品分类
+        if commodity_category_id_list:
+            order_queryset = order_queryset.filter(
+                category__id__in=commodity_category_id_list
+            )
+        # 直播班次
+        if live_shift_list:
+            order_queryset = order_queryset.filter(
+                play__classs__classtag__in=live_shift_list
+            )
+        # 是否固定链接
+        if is_Guding_link is not None:
+            if is_Guding_link:
+                # 是固定链接
+                order_queryset = order_queryset.filter(
+                    is_guding_url=1
+                )
+            else:
+                # 是闪购链接
+                order_queryset = order_queryset.filter(
+                    is_guding_url=0
+                )
+        # 是否有证书
+        if has_certificate is not None:
+            if has_certificate:
+                # 有证书
+                order_queryset = order_queryset.filter(
+                    is_zhengshu=1
+                )
+            else:
+                # 无证书
+                order_queryset = order_queryset.filter(
+                    is_zhengshu=0
+                )
+        # 是否发货
+        if is_ship is not None:
+            if is_ship:
+                # 已发货
+                order_queryset = order_queryset.filter(
+                    item_status__sendgoodstype=1
+                )
+            else:
+                # 未发货
+                order_queryset = order_queryset.exclude(
+                    item_status__sendgoodstype=0
+                )
+        # 平台状态
+        if platform_status_list:
+            order_queryset = ReserveDownloadOrderInquirer.filter_order_qs_by_platform_status(order_queryset, platform_status_list)
+        # 市场专员
+        if shichangzhuanyuan_id_list:
+            order_queryset = order_queryset.filter(
+                play__shichangzhuanyuan__id__in=shichangzhuanyuan_id_list
+            )
+        # 品检状态
+        if pinjianzhuangtai_list:
+            order_queryset = ReserveDownloadOrderInquirer.filter_order_qs_by_pinjianzhuangtai(order_queryset, pinjianzhuangtai_list)
+        # 主播
+        if zhubo_id_list:
+            order_queryset = order_queryset.filter(
+                zhubo__id__in=zhubo_id_list
+            )
+
+
+
+    @staticmethod
+    def filter_order_qs_by_platform_status(order_queryset, platform_status_list):
+        # 平台状态 筛选
+        all_return_qs = OrderOrder.objects.none()
+        not_return_qs = OrderOrder.objects.none()
+        part_return_qs = OrderOrder.objects.none()
+
+        # 全部退货
+        if 'all_return' in platform_status_list:
+            all_return_qs = order_queryset.filter(
+                autostatus='2'
+            )
+        # 部分退货
+        if 'part_return' in platform_status_list:
+            part_return_qs = order_queryset.filter(
+                autostatus='11'
+            )
+        # 未退货
+        if 'not_return' in platform_status_list:
+            exclude_ids = order_queryset.filter(
+                autostatus='2'
+            ).values_list('id', flat=True)
+            not_return_qs = order_queryset.exclude(
+                id__in=exclude_ids
+            )
+
+        combine_qs = all_return_qs | part_return_qs | not_return_qs
+        return combine_qs.distinct('id')
+
+    @staticmethod
+    def filter_order_qs_by_pinjianzhuangtai(order_queryset, pinjianzhuangtai_list):
+        # eligibility 品检合格 is_checkgoods = 1 ; unqualified 品检不合格 is_checkgoods = 2; unqualified_enter_warehouse 不合格入库 is_checkgoods = 3;
+        # no_check 未品检 is_checkgoods = 0
+        eligibility_qs = OrderOrder.objects.none()
+        unqualified_qs = OrderOrder.objects.none()
+        unqualified_enter_warehouse_qs = OrderOrder.objects.none()
+        no_check_qs = OrderOrder.objects.none()
+
+        # 品检合格
+        if 'eligibility' in pinjianzhuangtai_list:
+            eligibility_qs = order_queryset.filter(
+                is_checkgoods=1
+            )
+        # 品检不合格
+        if 'unqualified' in pinjianzhuangtai_list:
+            unqualified_qs = order_queryset.filter(
+                is_checkgoods=2
+            )
+        # 不合格入库
+        if 'unqualified_enter_warehouse' in pinjianzhuangtai_list:
+            unqualified_enter_warehouse_qs = order_queryset.filter(
+                is_checkgoods=3
+            )
+        # 未品检
+        if 'no_check' in pinjianzhuangtai_list:
+            no_check_qs = order_queryset.filter(
+                is_checkgoods=0
+            )
+
+        combine_qs = eligibility_qs | unqualified_qs | unqualified_enter_warehouse_qs | no_check_qs
+        return combine_qs.distinct('id')
+
+    @staticmethod
+    def filter_order_qs_by_order_situation(order_queryset, order_situation_list):
+        """
+        订单情况 筛选 十种情况
+        正常订单 normal_order    order_order.status  ！= '0'
+        被删订单 deleted_order    order_order.status='0'
+        预售订单 presale_order    order_order.status<>'0' and order_order.is_presale=true
+        超福订单 super_welfare_order    order_order.status<>'0' and order_order.tradetype=1
+        线下发货 offline_ship    order_order.status<>'0' and (order_order.tradetype=0 or  order_order.tradetype isnull) and order_order.amount<=30
+        成本结算 cost_settlement    order_order.status<>'0' and order_order.balancetype=2
+        扣点结算 kick_settlement    order_order.status<>'0' and (order_order.balancetype<>2 or order_order.balancetype isnull
+        特殊订单 special_order    order_order.status<>'0' and order_order.tradetype=2
+        需绑货品 need_bind_goods    order_order.status<>'0' and order_order.is_bindgoods=true
+        重录订单 re_record_order    order_order.status<>'0' and order_order.is_reorder=1
+        """
+        normal_order_qs = OrderOrder.objects.none()
+        deleted_order_qs = OrderOrder.objects.none()
+        presale_order_qs = OrderOrder.objects.none()
+        super_welfare_order_qs = OrderOrder.objects.none()
+        offline_ship_qs = OrderOrder.objects.none()
+        cost_settlement_qs = OrderOrder.objects.none()
+        kick_settlement_qs = OrderOrder.objects.none()
+        special_order_qs = OrderOrder.objects.none()
+        need_bind_goods_qs = OrderOrder.objects.none()
+        re_record_order_qs = OrderOrder.objects.none()
+
+        # 正常订单
+        if 'normal_order' in order_situation_list:
+            normal_order_qs = order_queryset.exclude(
+                status='0'
+            )
+        # 被删订单
+        if 'deleted_order' in order_situation_list:
+            deleted_order_qs = order_queryset.filter(
+                status='0'
+            )
+        # 预售订单
+        if 'presale_order' in order_situation_list:
+            presale_order_qs = order_queryset.filter(
+                is_presale=True
+            ).exclude(
+                status='0'
+            )
+        # 超福订单
+        if 'super_welfare_order' in order_situation_list:
+            super_welfare_order_qs = order_queryset.filter(
+                tradetype=1
+            ).exclude(
+                status='0'
+            )
+        # 线下发货
+        if 'offline_ship' in order_situation_list:
+            offline_ship_qs = order_queryset.filter(
+                tradetype=0,
+                amount__lte=30
+            ).exclude(
+                status='0'
+            )
+
+
+    def get_order_flow_queryset(self):
+        pass
