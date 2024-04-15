@@ -17,7 +17,6 @@ timezone.activate('Asia/Shanghai')
 
 
 class ItemStatus(models.Model):
-
     STATUS_TYPE_CHOICE = (
         ('0', u'未退款'),
         ('1', u'跑单退款'),
@@ -33,6 +32,7 @@ class ItemStatus(models.Model):
     statustype = models.CharField(u'状态类型', choices=STATUS_TYPE_CHOICE, default='0', max_length=2)
     sort = models.PositiveIntegerField(u'排序', default=200, help_text=u'从小到大显示')
     created_time = models.DateTimeField(u'创建时间', auto_now_add=True)
+    sendgoodstype = models.IntegerField('发货类型', help_text=u'发货类型 1为发货， 0为未发货', null=True, blank=True)
     is_refund = models.BooleanField(u'是否退款', default=False, help_text=u'是否退款')
     is_active = models.BooleanField(u'是否启用', default=True, help_text=u'是否启用')
 
@@ -48,10 +48,10 @@ class ItemStatus(models.Model):
 # 系统订单数据模型
 class OrderOrder(models.Model):
     CHECK_GOODS_CHOICE = (
-        (0,  '未品检'),
-        (1,  '合格'),
-        (2,  '不合格'),
-        (3,  '不合格入库'),
+        (0, '未品检'),
+        (1, '合格'),
+        (2, '不合格'),
+        (3, '不合格入库'),
     )
 
     # ### 基础信息 ###
@@ -79,8 +79,8 @@ class OrderOrder(models.Model):
     # ####### 状态字段 #######
     # order_status = models.CharField('订单核对状态', max_length=2, default=OrderCheckedStatus.UNCERTIFIED.value,
     #                                 db_column='status')  # 订单核对或删除等状态
-    flow_status = models.CharField('订单流程状态', max_length=2, default=OrderFlowStatus.NEW_ORDER.value,
-                                   db_column='autostatus')  # 控制订单流程状态 自动状态
+    autostatus = models.CharField('订单流程状态/自动状态/平台状态', max_length=2, default=OrderFlowStatus.NEW_ORDER.value,
+                                  db_column='autostatus')  # 控制订单流程状态 自动状态
     # #######无关但必需写入的字段##### #
     fee = models.DecimalField('代购费', max_digits=15, decimal_places=2, default=0)
     has_wen = models.BooleanField('有纹', default=False)
@@ -121,7 +121,6 @@ class OrderOrder(models.Model):
     itemcode = models.CharField('商品编号', max_length=1550, blank=True, null=True)
     finance_amount = models.FloatField('固定货价/财务金额', blank=True, null=True)
 
-    # autostatus = models.CharField('自动状态', max_length=2, blank=True, null=True)
     item_status = models.ForeignKey(ItemStatus, related_name='orders_item_status', verbose_name=u'流程状态', null=True, blank=True,
                                     help_text=u'通过订单流程来设置',
                                     on_delete=models.SET_NULL)
@@ -133,6 +132,11 @@ class OrderOrder(models.Model):
 
     # 2024-04-13 补充字段
     is_checkgoods = models.IntegerField('品检情况', blank=True, null=True, choices=CHECK_GOODS_CHOICE)
+    is_presale = models.BooleanField(u'是否预售订单', default=False)
+    tradetype = models.IntegerField(u'交易类型', default=0)  # 1：为超级福袋,2：特殊订单
+    balancetype = models.PositiveSmallIntegerField(u'结算类型', default=0)  # 1：扣点结算 2：成本价结算
+    is_bindgoods = models.BooleanField(u'需要绑定货品', default=False)
+    is_reorder = models.IntegerField(u'是否为重录订单', blank=True, null=True, default=0)  # 重录订单=1
 
     class Meta:
         managed = False
@@ -329,7 +333,9 @@ class OrderTaobaoorder(models.Model):
     seller_memo = models.CharField('卖家备注', max_length=2550, blank=True, null=True)
 
     is_bindprint = models.IntegerField(verbose_name='是否已经QIC，绑定了 BIC, 3 表示已经绑定', blank=True, null=True)
-    is_pass_qic_check = models.IntegerField(verbose_name='是否通过 QIC 检查，0 表示订单初生 还没示有下载bic码，1 表下载了BIC码 还未进行绑码操作，2 表示成功  3表示绑码失败', blank=True, null=True)
+    is_pass_qic_check = models.IntegerField(
+        verbose_name='是否通过 QIC 检查，0 表示订单初生 还没示有下载bic码，1 表下载了BIC码 还未进行绑码操作，2 表示成功  3表示绑码失败', blank=True,
+        null=True)
     dy_order_code = models.CharField(verbose_name='BIC，预绑定的', blank=True, null=True, max_length=255)
     qualityagency = models.CharField(verbose_name='质检机构 NGTC/GTC', null=True, blank=True, max_length=20)
     goods_specs = models.CharField(verbose_name='商品规格', null=True, blank=True, max_length=255, db_column='goodsSpecs')

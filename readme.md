@@ -12,10 +12,6 @@
 - 链接类型 （固定 or 闪购） OrderOrder 中的  is_guding_url 为 1 的是固定链接，为 0 的是闪购链接
 - 证书情况 （有证书 or 无证书） OrderOrder 中的 is_zhengshu 为 1 的是有证书，为 0 的是无证书
 - 市场专员  OrderOrder -> OrderPlay -> shichangzhuanyuan
-
-
-
-
 - 是否发货 ？ ItemStatus 的 sendgoodstype =1 为发货， =0 为未发货， （无代码）
 
 - 员工 ？  OrderFlow 的 owner 和 OrderOrder 的 creator （改为扫码人）
@@ -28,7 +24,7 @@
 不合格 check2  is_checkgoods = 2
 不合格入库  check3 is_checkgoods = 3
 未品检 check0  is_checkgoods = 0
-全部 check4 is_checkgoods > 0
+
 
 
 - 平台状态  ？  OrderOrder 中的 autostatus （无代码）
