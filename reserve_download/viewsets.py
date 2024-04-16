@@ -188,7 +188,6 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         rep_data['result'] = True
         return Response(rep_data)
 
-
     def check_create_params(self, request_data):
         """
         校验创建任务参数
@@ -366,4 +365,173 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 rep_data['msg'] = f'任务创建失败！{e}'
                 ReserveDownload.objects.filter(id=record_obj_id).update(task_status=2, task_result=str(e))
+        return Response(rep_data)
+
+    @staticmethod
+    def new_check_create_params(request_data):
+        """
+        校验创建任务参数
+        :param request_data:
+        :return: is_pass, msg, exec_type
+        """
+        ret_data = {
+            'is_pass': False,               # 是否通过
+            'msg': '',                      # 错误信息
+            'fendian_info': None,           # 店铺信息
+            'filter_condition': None,       # 筛选条件
+            'creator_obj': None,            # 创建者
+            'is_future': False,             # 是否预约定时
+            'future_exec_time': None,       # 预约执行时间
+        }
+        fendian_id_list = request_data.get('fendian_id_list')
+        start_date = request_data.get('start_date')
+        end_date = request_data.get('end_date')
+        date_type = request_data.get('date_type')
+        creator_id = request_data.get('creator_id')
+        task_tag = request_data.get('task_tag')
+        is_history = request_data.get('is_history', None)
+
+        # 校验必填参数
+        # 必须有 is_history
+        if is_history is None:
+            ret_data['msg'] = 'is_history 不能为空！'
+            return ret_data
+        # 校验店铺id列表
+        if not fendian_id_list:
+            ret_data['msg'] += '店铺id列表不能为空！'
+            return ret_data
+        # 校验 task_tag
+        if not task_tag:
+            ret_data['msg'] = '任务标签不能为空！'
+            return ret_data
+        # 校验创建者
+        if not creator_id:
+            ret_data['msg'] = '创建者不能为空！'
+            return ret_data
+        if not AccountMyuser.objects.filter(id=creator_id).exists():
+            ret_data['msg'] = '创建者不存在！'
+            return ret_data
+        ret_data['creator_obj'] = AccountMyuser.objects.get(id=creator_id)
+        # 校验日期类型
+        if not date_type:
+            ret_data['msg'] = '日期类型不能为空！'
+            return ret_data
+        if date_type not in ['order_date', 'scan_date']:
+            ret_data['msg'] = '日期类型错误！'
+            return ret_data
+
+        # 必须有开始和结束时间
+        if not start_date or not end_date:
+            ret_data['msg'] = '时间范围不完整！'
+            return ret_data
+        # 开始时间不能大于结束时间
+        start_date_obj = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date_obj = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+        if start_date_obj > end_date_obj:
+            ret_data['msg'] = '开始时间不能大于结束时间！'
+            return ret_data
+        # 时间范围不能超过 65 天
+        if (end_date_obj - start_date_obj).days > 65:
+            ret_data['msg'] = '时间范围不能超过两个月！'
+            return ret_data
+
+        """   构建 fendian_info """
+        fendian_info = []
+        for fendian_id in fendian_id_list:
+            try:
+                shop_serialprefix_obj = ShopSerialprefix.objects.get(id=fendian_id)
+            except ShopSerialprefix.DoesNotExist:
+                ret_data['msg'] = f'{fendian_id}店铺id不存在！'
+                return ret_data
+            fendian_info.append({
+                'id': fendian_id,
+                'name': shop_serialprefix_obj.name,
+            })
+        ret_data['fendian_info'] = fendian_info
+
+        """   构建 filter_condition  """
+        ret_data['filter_condition'] = {
+            'start_date': start_date,
+            'end_date': end_date,
+            'date_type': date_type,
+            'date_type_text': '下单日期' if date_type == 'order_date' else '扫码日期',
+            'scan_code_status': request_data.get('scan_code_status_id_list'),
+            'is_history': is_history,
+            'commodity_category_id_list': request_data.get('commodity_category_id_list'),
+            'scanner_id_list': request_data.get('scanner_id_list'),
+            'live_shift_list': request_data.get('live_shift_list'),
+            'platform_status_list': request_data.get('platform_status_list'),
+            'is_Guding_link': request_data.get('is_Guding_link'),
+            'has_certificate': request_data.get('has_certificate'),
+            'shichangzhuanyuan_id_list': request_data.get('shichangzhuanyuan_id_list'),
+            'pinjianzhuangtai_list': request_data.get('pinjianzhuangtai_list'),
+            'is_ship': request_data.get('is_ship'),
+            'order_situation_list': request_data.get('order_situation_list'),
+            'zhubo_id_list': request_data.get('zhubo_id_list'),
+            'shipper_id_list': request_data.get('shipper_id_list'),
+        }
+
+        """  是否预约定时  """
+        now_date_obj = datetime.datetime.now().date()
+        if end_date_obj <= now_date_obj:
+            # 无需预约定时, 需要校验数据量
+            ret_data['is_future'] = False
+            inquire = ReserveDownloadOrderInquirer(
+                query_param_dict=request_data,
+                reserve_download_record_id=None,
+                file_name=None,
+            )
+
+            count_check_re, msg = inquire.only_check_count()
+
+            if not count_check_re:
+                ret_data['is_pass'] = False
+                ret_data['msg'] = msg
+                return ret_data
+        else:
+            # 预约定时
+            ret_data['is_future'] = True
+            ret_data['future_exec_time'] = (end_date_obj + datetime.timedelta(days=1)).strftime('%Y-%m-%d 00:01:00')
+        ret_data['is_pass'] = True
+        return ret_data
+
+    @action(methods=['post'], detail=False)
+    def new_create_task(self, request):
+        rep_data = {
+            'msg': '测试',
+            'result': True,
+            'data': {},
+        }
+        post_data = request.data
+        check_re_data = self.new_check_create_params(post_data)
+        if not check_re_data['is_pass']:
+            rep_data['msg'] = check_re_data['msg']
+            return Response(rep_data)
+
+        # start_date = request.data.get('start_date')
+        # end_date = request.data.get('end_date')
+        # task_tag = request.data.get('task_tag')
+        # creator_id = request.data.get('creator_id')
+        #
+        # file_name = f'{creator_id}_{start_date}_{end_date}_{int(time.time())}_{random.randint(100, 999)}.xlsx'
+        # record_obj_id = ReserveDownload.objects.create(
+        #     creator=check_re_data.get('creator_obj'),
+        #     filter_condition=check_re_data.get('filter_condition'),
+        #     fendian_info=check_re_data.get('fendian_info'),
+        #     task_status=0,
+        #     file_name=file_name,
+        #     task_celery_id=None,
+        #     tag=task_tag,
+        #     data_count=None,
+        # ).id
+
+        print('测试阶段， 直接执行')
+        t = ReserveDownloadOrderInquirer(
+            query_param_dict=post_data,
+            reserve_download_record_id=None,
+            file_name=None,
+        )
+        r, m = t.only_check_count()
+        print(r, m)
+
         return Response(rep_data)
