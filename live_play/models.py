@@ -81,6 +81,11 @@ class LiveShiftSchedule(models.Model):
                                      on_delete=models.PROTECT)
     checktime = models.DateTimeField(u'巡检时间', db_index=True, null=True, blank=True)
 
+    class Meta:
+        verbose_name = u'直播排班'
+        verbose_name_plural = u'直播排班'
+        db_table = 'order_class'
+
 
 class OrderPlay(models.Model):
     """

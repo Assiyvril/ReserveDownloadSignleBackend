@@ -1,4 +1,5 @@
 import datetime
+import time
 
 from scripts_public import _setup_django
 from reserve_download.models import ReserveDownload
@@ -192,7 +193,7 @@ class ReserveDownloadOrderInquirer:
     """
     新查询器 2024-04-14
     """
-    DATA_COUNT_LIMIT = 50000    # 数据量限制, 超过此数量，不予导出
+    DATA_COUNT_LIMIT = 50000  # 数据量限制, 超过此数量，不予导出
 
     def __init__(self, query_param_dict, reserve_download_record_id=None, file_name=None):
         """
@@ -220,27 +221,58 @@ class ReserveDownloadOrderInquirer:
                 day__gte=start_date,
                 day__lte=end_date,
                 prefix__id__in=fendian_id_list,
+            ).prefetch_related(
+                'prefix',
+                'category', 'shipper',
+                'zhubo', 'zhuli',
+                'item_status',
+                'play', 'play__changzhang', 'play__banzhang', 'play__shichangzhuanyuan', 'play__zhuli2',
+                'play__zhuli3', 'play__zhuli4', 'play__changkong', 'play__changkong1',
+                'play__changkong2', 'play__changkong3', 'play__kefu1', 'play__kefu2',
+                'play__kefu3', 'play__kefu4',
+                'rel_to_taobao_order', 'rel_to_taobao_order__taobaoorder',
+                'scan_code_flows'
             )
+            print('下单日期yyy', order_queryset.count())
             # 先判断 需要从 OrderFlow 逆向查询到 OrderOrder 的条件： scanner_id_list 扫码人， scan_code_status_id_list 扫码状态，
             need_reverse_query = False  # 是否需要逆向查询
             order_flow_qs = OrderFlow.objects.filter(
                 order__in=order_queryset
             )
             if scan_code_status_id_list:
+                print('有扫码状态', scan_code_status_id_list)
                 # 有扫码状态的情况
                 need_reverse_query = True
-                order_flow_qs = order_flow_qs.objects.filter(
-                    status_id__in=scan_code_status_id_list,
+                order_flow_qs = order_flow_qs.filter(
+                    status__id__in=scan_code_status_id_list,
                     order__in=order_queryset
+                ).prefetch_related(
+                    'order', 'order__prefix', 'order__category', 'order__shipper', 'order__zhubo', 'order__zhuli',
+                    'order__item_status', 'order__play', 'order__play__changzhang', 'order__play__banzhang',
+                    'order__play__shichangzhuanyuan', 'order__play__zhuli2', 'order__play__zhuli3', 'order__play__zhuli4',
+                    'order__play__changkong', 'order__play__changkong1', 'order__play__changkong2', 'order__play__changkong3',
+                    'order__play__kefu1', 'order__play__kefu2', 'order__play__kefu3', 'order__play__kefu4', 'order__play__classs',
+                    'order__rel_to_taobao_order', 'order__rel_to_taobao_order__taobaoorder',
+                    'order__scan_code_flows', 'owner', 'status',
                 )
             if scanner_id_list:
                 # 有扫码人的情况
+                print('有扫码人', scanner_id_list)
                 need_reverse_query = True
-                order_flow_qs = order_flow_qs.objects.filter(
+                order_flow_qs = order_flow_qs.filter(
                     owner__id__in=scanner_id_list,
                     order__in=order_queryset
+                ).prefetch_related(
+                    'order', 'order__prefix', 'order__category', 'order__shipper', 'order__zhubo', 'order__zhuli',
+                    'order__item_status', 'order__play', 'order__play__changzhang', 'order__play__banzhang',
+                    'order__play__shichangzhuanyuan', 'order__play__zhuli2', 'order__play__zhuli3', 'order__play__zhuli4',
+                    'order__play__changkong', 'order__play__changkong1', 'order__play__changkong2', 'order__play__changkong3',
+                    'order__play__kefu1', 'order__play__kefu2', 'order__play__kefu3', 'order__play__kefu4', 'order__play__classs',
+                    'order__rel_to_taobao_order', 'order__rel_to_taobao_order__taobaoorder',
+                    'order__scan_code_flows', 'owner', 'status',
                 )
             if need_reverse_query:
+                print('需要逆向')
                 order_queryset = order_queryset.filter(
                     id__in=order_flow_qs.values_list('order_id', flat=True)
                 )
@@ -251,7 +283,15 @@ class ReserveDownloadOrderInquirer:
                 created_time__date__gte=start_date,
                 created_time__date__lte=end_date,
                 order__prefix_id__in=fendian_id_list,
-            )
+            ).prefetch_related(
+                    'order', 'order__prefix', 'order__category', 'order__shipper', 'order__zhubo', 'order__zhuli',
+                    'order__item_status', 'order__play', 'order__play__changzhang', 'order__play__banzhang',
+                    'order__play__shichangzhuanyuan', 'order__play__zhuli2', 'order__play__zhuli3', 'order__play__zhuli4',
+                    'order__play__changkong', 'order__play__changkong1', 'order__play__changkong2', 'order__play__changkong3',
+                    'order__play__kefu1', 'order__play__kefu2', 'order__play__kefu3', 'order__play__kefu4', 'order__play__classs',
+                    'order__rel_to_taobao_order', 'order__rel_to_taobao_order__taobaoorder',
+                    'order__scan_code_flows', 'owner', 'status',
+                )
             if scan_code_status_id_list:
                 # 有扫码状态的情况
                 order_flow_qs = order_flow_qs.filter(
@@ -264,7 +304,7 @@ class ReserveDownloadOrderInquirer:
                 )
             order_queryset = OrderOrder.objects.filter(
                 id__in=order_flow_qs.values_list('order_id', flat=True)
-            ).distinct('id').prefetch_related(
+            ).prefetch_related(
                 'prefix',
                 'category', 'shipper',
                 'zhubo', 'zhuli',
@@ -282,16 +322,19 @@ class ReserveDownloadOrderInquirer:
         # 进一步对 order_queryset 进行筛选
         # 商品分类
         if commodity_category_id_list:
+            print('商品分类', commodity_category_id_list)
             order_queryset = order_queryset.filter(
                 category__id__in=commodity_category_id_list
             )
         # 直播班次
         if live_shift_list:
+            print('直播班次', live_shift_list)
             order_queryset = order_queryset.filter(
                 play__classs__classtag__in=live_shift_list
             )
         # 是否固定链接
         if is_Guding_link is not None:
+            print('是否固定链接', is_Guding_link, type(is_Guding_link))
             if is_Guding_link:
                 # 是固定链接
                 order_queryset = order_queryset.filter(
@@ -304,6 +347,7 @@ class ReserveDownloadOrderInquirer:
                 )
         # 是否有证书
         if has_certificate is not None:
+            print('是否有证书', has_certificate, type(has_certificate))
             if has_certificate:
                 # 有证书
                 order_queryset = order_queryset.filter(
@@ -316,6 +360,7 @@ class ReserveDownloadOrderInquirer:
                 )
         # 是否发货
         if is_ship is not None:
+            print('是否发货', is_ship, type(is_ship))
             if is_ship:
                 # 已发货
                 order_queryset = order_queryset.filter(
@@ -328,31 +373,38 @@ class ReserveDownloadOrderInquirer:
                 )
         # 平台状态
         if platform_status_list:
+            print('平台状态', platform_status_list)
             order_queryset = ReserveDownloadOrderInquirer.filter_order_qs_by_platform_status(order_queryset, platform_status_list)
         # 市场专员
         if shichangzhuanyuan_id_list:
+            print('市场专员', shichangzhuanyuan_id_list)
             order_queryset = order_queryset.filter(
                 play__shichangzhuanyuan__id__in=shichangzhuanyuan_id_list
             )
         # 品检状态
         if pinjianzhuangtai_list:
+            print('品检状态', pinjianzhuangtai_list)
             order_queryset = ReserveDownloadOrderInquirer.filter_order_qs_by_pinjianzhuangtai(order_queryset, pinjianzhuangtai_list)
         # 主播
         if zhubo_id_list:
+            print('主播', zhubo_id_list)
             order_queryset = order_queryset.filter(
                 zhubo__id__in=zhubo_id_list
             )
 
         # 订单情况
         if order_situation_list:
+            print('订单情况', order_situation_list)
             order_queryset = ReserveDownloadOrderInquirer.filter_order_qs_by_order_situation(order_queryset, order_situation_list)
 
         # 货主
         if shipper_id_list:
+            print('货主', shipper_id_list)
             order_queryset = order_queryset.filter(
                 shipper__id__in=shipper_id_list
             )
 
+        print('最终数量', order_queryset.count())
         return order_queryset.distinct('id')
 
     @staticmethod
@@ -786,6 +838,8 @@ class ReserveDownloadOrderInquirer:
         筛选 OrderOrder 查询集
         :return:
         """
+        exec_inquire_start_time = datetime.datetime.now()
+        print('开始执行查询，时间：', exec_inquire_start_time.strftime('%Y-%m-%d %H:%M:%S'))
         is_history = self.query_param_dict.get('is_history', False)
         date_type = self.query_param_dict.get('date_type', None)
         start_date = self.query_param_dict.get('start_date', None)
@@ -828,6 +882,9 @@ class ReserveDownloadOrderInquirer:
                 zhubo_id_list=zhubo_id_list, shipper_id_list=shipper_id_list
             )
         self.data_count = self.queryset.count()
+        exec_inquire_end_time = datetime.datetime.now()
+        print('查询结束，时间：', exec_inquire_end_time.strftime('%Y-%m-%d %H:%M:%S'))
+        print('查询耗时：', exec_inquire_end_time - exec_inquire_start_time)
 
     def only_check_count(self):
         """
@@ -879,7 +936,9 @@ class ReserveDownloadOrderInquirer:
             2， 此任务创建时，数据量校验通过； 然后进入队列排队执行；等到执行时，数据量可能已经发生变化
         """
         if self.data_count > self.DATA_COUNT_LIMIT:
-            self.update_task_status(task_status_num=6, task_result_str=f'数据量为{self.data_count}, 超过{self.DATA_COUNT_LIMIT}条，禁止导出，请修改筛选条件', is_success=False)
+            self.update_task_status(task_status_num=6,
+                                    task_result_str=f'数据量为{self.data_count}, 超过{self.DATA_COUNT_LIMIT}条，禁止导出，请修改筛选条件',
+                                    is_success=False)
             return False
         if self.data_count == 0:
             self.update_task_status(task_status_num=6, task_result_str='数据量为0，请修改筛选条件', is_success=False)
@@ -904,12 +963,153 @@ if __name__ == '__main__':
             261,
             218
         ],
-        "scan_code_status_id_list": [],
+        "scan_code_status_id_list": [
+            294,
+            11,
+            34,
+            37,
+            65,
+            66,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            78,
+            67,
+            68,
+            83,
+            82,
+            33,
+            80,
+            32,
+            84,
+            85,
+            88,
+            287,
+            286,
+            285,
+            284,
+            253,
+            115,
+            47,
+            42,
+            40,
+            26,
+            23,
+            22,
+            9,
+            295,
+            90,
+            91,
+            92,
+            93,
+            94,
+            245,
+            229,
+            169,
+            168,
+            159,
+            158,
+            149,
+            111,
+            109,
+            296,
+            194,
+            189,
+            240,
+            239,
+            195,
+            191,
+            190,
+            187,
+            192,
+            291,
+            241,
+            231,
+            222,
+            208,
+            203,
+            180,
+            177,
+            176,
+            175,
+            172,
+            171,
+            166,
+            162,
+            238,
+            314,
+            213,
+            218,
+            188,
+            261,
+            260,
+            258,
+            257,
+            256,
+            255,
+            254,
+            252,
+            251,
+            235,
+            232,
+            64,
+            299,
+            306,
+            13,
+            48,
+            273,
+            276,
+            277,
+            275,
+            271,
+            270,
+            266,
+            263,
+            262,
+            242,
+            220,
+            164,
+            17,
+            14,
+            186,
+            206,
+            174,
+            116,
+            8,
+            10,
+            307,
+            50,
+            185,
+            300,
+            298,
+            302,
+            303,
+            305,
+            246,
+            311,
+            312,
+            319,
+            318,
+            315,
+            316,
+            320,
+            325,
+            7,
+            173,
+            324,
+            323,
+            329,
+            309,
+            290
+        ],
         "task_tag": "234",
         "is_history": False,
         "commodity_category_id_list": [],
         "scanner_id_list": [],
-        "live_shift_list": [],
+        "live_shift_list": [1, 2, 3],
         "platform_status_list": [],
         "is_Guding_link": None,
         "has_certificate": None,
@@ -923,3 +1123,4 @@ if __name__ == '__main__':
     }
     t = ReserveDownloadOrderInquirer(query_param_dict=query)
     t.only_check_count()
+    print('数量：', t.data_count)

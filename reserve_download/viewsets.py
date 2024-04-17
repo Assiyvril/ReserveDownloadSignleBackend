@@ -503,10 +503,10 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             'data': {},
         }
         post_data = request.data
-        check_re_data = self.new_check_create_params(post_data)
-        if not check_re_data['is_pass']:
-            rep_data['msg'] = check_re_data['msg']
-            return Response(rep_data)
+        # check_re_data = self.new_check_create_params(post_data)
+        # if not check_re_data['is_pass']:
+        #     rep_data['msg'] = check_re_data['msg']
+        #     return Response(rep_data)
 
         # start_date = request.data.get('start_date')
         # end_date = request.data.get('end_date')
