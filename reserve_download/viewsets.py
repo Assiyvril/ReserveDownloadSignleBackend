@@ -1,7 +1,9 @@
 import datetime
+import os
 import random
 import time
 
+from django.conf import settings
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -10,6 +12,7 @@ from commodity_category.models import ShopCategory
 from order.models import ItemStatus
 from reserve_download.models import ReserveDownload
 from reserve_download.scripts.inquire_order_info import ReserveDownloadOrderInquirer
+from reserve_download.scripts.read_upload_excel import Read_RED_Upload_Excel
 from reserve_download.serializers import ReserveDownloadRecordSerializer, OrderScanCodeStatusChoiceListSerializer, FenDianChoiceListSerializer, \
     ZhuboChoiceListSerializer, ShopShipperChoiceListSerializer, UserFirstNameChoiceListSerializer
 from shipper.models import ShopShipper
@@ -535,3 +538,101 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         print(r, m)
 
         return Response(rep_data)
+
+    @action(methods=['post'], detail=False)
+    def upload_excel(self, request):
+        rep_data = {
+            'success': False,
+            'msg': '',
+            'file_name': '',
+        }
+        upload_file = request.FILES.get('file', None)
+        creator_id = request.data.get('creator_id')
+
+        if not upload_file:
+            rep_data['msg'] = '请上传文件'
+            return Response(rep_data)
+        if not creator_id:
+            rep_data['msg'] = 'creator_id不能为空！'
+            return Response(rep_data)
+        file_name = upload_file.name
+        if not file_name.endswith('.xlsx'):
+            rep_data['msg'] = '文件必须是xlsx格式'
+            return Response(rep_data)
+
+        print('file_name:', file_name, type(file_name))
+        print('creator_id:', creator_id, type(creator_id))
+
+        try:
+            new_file_name = f'{creator_id}_{int(time.time())}_{random.randint(1000, 9999)}_{file_name}'
+            print('new_file_name:', new_file_name)
+            file_path = os.path.join(settings.MEDIA_ROOT, 'RED_Upload_Excel', new_file_name)
+            print('file_path:', file_path)
+            file_dir = os.path.dirname(file_path)
+            if not os.path.exists(file_dir):
+                os.makedirs(file_dir)
+            with open(file_path, 'wb') as f:
+                for chunk in upload_file.chunks():
+                    f.write(chunk)
+            rep_data['success'] = True
+            rep_data['msg'] = '上传成功'
+            rep_data['file_name'] = new_file_name
+        except Exception as e:
+            rep_data['msg'] = str(e)
+
+        return Response(rep_data)
+
+    @action(methods=['post'], detail=False)
+    def parse_excel(self, request):
+        """
+        解析excel
+        :param request:
+        :return:
+        """
+        rep_data = {
+            'success': False,
+            'msg': '',
+            'parse_data': [],
+        }
+        file_name = request.data.get('file_name', None)
+        creator_id = request.data.get('creator_id', None)
+        available_fendian_id_list = request.data.get('available_fendian_id_list', None)
+        file_mode = request.data.get('file_mode', None)
+
+        if not file_mode:
+            rep_data['msg'] = 'file_mode不能为空！'
+            return Response(rep_data)
+        if file_mode not in ['big_G', 'platform']:
+            rep_data['msg'] = 'file_mode错误！'
+            return Response(rep_data)
+        if not file_name:
+            rep_data['msg'] = '文件名不能为空'
+            return Response(rep_data)
+        if not file_name.endswith('.xlsx'):
+            rep_data['msg'] = '文件必须是xlsx格式'
+            return Response(rep_data)
+        if not creator_id:
+            rep_data['msg'] = 'creator_id不能为空！'
+            return Response(rep_data)
+        if not available_fendian_id_list:
+            rep_data['msg'] = 'available_fendian_id_list不能为空！'
+            return Response(rep_data)
+        file_path = os.path.join(settings.MEDIA_ROOT, 'RED_Upload_Excel', file_name)
+        if not os.path.exists(file_path):
+            rep_data['msg'] = '文件不存在'
+            return Response(rep_data)
+
+        err, parse_data_list = Read_RED_Upload_Excel(file_path=file_path, col_field=['单号'], file_mode=file_mode).read_data()
+        if err:
+            rep_data['msg'] = '解析过程中出现错误' + err
+            rep_data['parse_data'] = parse_data_list
+            return Response(rep_data)
+
+        if len(parse_data_list) == 0:
+            rep_data['msg'] = '没有从表格中解析到有效数据，请检查表格内容！'
+            return Response(rep_data)
+
+        order_code_list = [item.get('order_code') for item in parse_data_list if item.get('check_success') is True]
+
+
+
