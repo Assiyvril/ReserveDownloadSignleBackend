@@ -20,7 +20,7 @@ from shop.models import ShopSerialprefix
 from user.models import AccountMyuser
 from utils.pagination import CustomV3Pagination
 from utils.renderer import CustomV3Renderer
-from celery_task.reserve_download.task import scheduled_download
+from celery_task.reserve_download.task import scheduled_download_by_params
 
 
 class ReserveDownloadViewSet(viewsets.ModelViewSet):
@@ -503,39 +503,57 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         rep_data = {
             'msg': '测试',
             'result': True,
-            'data': {},
+            'data': None,
         }
         post_data = request.data
-        # check_re_data = self.new_check_create_params(post_data)
-        # if not check_re_data['is_pass']:
-        #     rep_data['msg'] = check_re_data['msg']
-        #     return Response(rep_data)
+        check_re_data = self.new_check_create_params(post_data)
+        if not check_re_data['is_pass']:
+            rep_data['msg'] = check_re_data['msg']
+            return Response(rep_data)
 
-        # start_date = request.data.get('start_date')
-        # end_date = request.data.get('end_date')
-        # task_tag = request.data.get('task_tag')
-        # creator_id = request.data.get('creator_id')
-        #
-        # file_name = f'{creator_id}_{start_date}_{end_date}_{int(time.time())}_{random.randint(100, 999)}.xlsx'
-        # record_obj_id = ReserveDownload.objects.create(
-        #     creator=check_re_data.get('creator_obj'),
-        #     filter_condition=check_re_data.get('filter_condition'),
-        #     fendian_info=check_re_data.get('fendian_info'),
-        #     task_status=0,
-        #     file_name=file_name,
-        #     task_celery_id=None,
-        #     tag=task_tag,
-        #     data_count=None,
-        # ).id
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
+        task_tag = request.data.get('task_tag')
+        creator_id = request.data.get('creator_id')
 
-        print('测试阶段， 直接执行')
-        t = ReserveDownloadOrderInquirer(
-            query_param_dict=post_data,
-            reserve_download_record_id=None,
-            file_name=None,
-        )
-        r, m = t.only_check_count()
-        print(r, m)
+        file_name = f'{creator_id}_{start_date}_{end_date}_{int(time.time())}_{random.randint(100, 999)}.xlsx'
+        record_obj_id = ReserveDownload.objects.create(
+            creator=check_re_data.get('creator_obj'),
+            filter_condition=check_re_data.get('filter_condition'),
+            fendian_info=check_re_data.get('fendian_info'),
+            task_status=0,
+            file_name=file_name,
+            task_celery_id=None,
+            tag=task_tag,
+            data_count=None,
+        ).id
+        
+        if check_re_data['is_future']:
+            # 预约定时
+            try:
+                task_exec_time = check_re_data.get('future_exec_time')
+                task = scheduled_download_by_params.apply_async(
+                    eta=task_exec_time,
+                    args=(post_data, record_obj_id, file_name),
+                )
+                ReserveDownload.objects.filter(id=record_obj_id).update(task_celery_id=task.id, task_status=3)
+                rep_data['result'] = True
+                rep_data['msg'] = f'任务创建成功, 预约定时 {check_re_data["future_exec_time"]}'
+            except Exception as e:
+                rep_data['msg'] = f'任务创建失败！{e}'
+                ReserveDownload.objects.filter(id=record_obj_id).update(task_status=2, task_result=str(e))
+        else:
+            # 无需预约定时
+            try:
+                task = scheduled_download_by_params.apply_async(
+                    args=(post_data, record_obj_id, file_name),
+                )
+                ReserveDownload.objects.filter(id=record_obj_id).update(task_celery_id=task.id, task_status=3)
+                rep_data['result'] = True
+                rep_data['msg'] = '任务创建成功 !'
+            except Exception as e:
+                rep_data['msg'] = f'任务创建失败！{e}'
+                ReserveDownload.objects.filter(id=record_obj_id).update(task_status=2, task_result=str(e))
 
         return Response(rep_data)
 
