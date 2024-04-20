@@ -595,34 +595,34 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             'parse_data': [],
         }
         file_name = request.data.get('file_name', None)
-        creator_id = request.data.get('creator_id', None)
-        available_fendian_id_list = request.data.get('available_fendian_id_list', None)
-        file_mode = request.data.get('file_mode', None)
+        # creator_id = request.data.get('creator_id', None)
+        # available_fendian_id_list = request.data.get('available_fendian_id_list', None)
+        # file_mode = request.data.get('file_mode', None)
 
-        if not file_mode:
-            rep_data['msg'] = 'file_mode不能为空！'
-            return Response(rep_data)
-        if file_mode not in ['big_G', 'platform']:
-            rep_data['msg'] = 'file_mode错误！'
-            return Response(rep_data)
+        # if not file_mode:
+        #     rep_data['msg'] = 'file_mode不能为空！'
+        #     return Response(rep_data)
+        # if file_mode not in ['big_G', 'platform']:
+        #     rep_data['msg'] = 'file_mode错误！'
+        #     return Response(rep_data)
         if not file_name:
             rep_data['msg'] = '文件名不能为空'
             return Response(rep_data)
         if not file_name.endswith('.xlsx'):
             rep_data['msg'] = '文件必须是xlsx格式'
             return Response(rep_data)
-        if not creator_id:
-            rep_data['msg'] = 'creator_id不能为空！'
-            return Response(rep_data)
-        if not available_fendian_id_list:
-            rep_data['msg'] = 'available_fendian_id_list不能为空！'
-            return Response(rep_data)
+        # if not creator_id:
+        #     rep_data['msg'] = 'creator_id不能为空！'
+        #     return Response(rep_data)
+        # if not available_fendian_id_list:
+        #     rep_data['msg'] = 'available_fendian_id_list不能为空！'
+        #     return Response(rep_data)
         file_path = os.path.join(settings.MEDIA_ROOT, 'RED_Upload_Excel', file_name)
         if not os.path.exists(file_path):
-            rep_data['msg'] = '文件不存在'
+            rep_data['msg'] = '文件不存在, 请重新上传！'
             return Response(rep_data)
 
-        err, parse_data_list = Read_RED_Upload_Excel(file_path=file_path, col_field=['单号'], file_mode=file_mode).read_data()
+        err, parse_data_list = Read_RED_Upload_Excel(file_path=file_path, col_field=['单号']).read_data()
         if err:
             rep_data['msg'] = '解析过程中出现错误' + err
             rep_data['parse_data'] = parse_data_list
@@ -632,7 +632,49 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             rep_data['msg'] = '没有从表格中解析到有效数据，请检查表格内容！'
             return Response(rep_data)
 
-        order_code_list = [item.get('order_code') for item in parse_data_list if item.get('check_success') is True]
+        rep_data['success'] = True
+        rep_data['msg'] = '解析成功'
+        rep_data['parse_data'] = parse_data_list
+        # 删除文件
+        os.remove(file_path)
+        return Response(rep_data)
 
+    @action(methods=['post'], detail=False)
+    def create_task_by_excel_data(self, request):
+        """
+        通过excel数据创建任务
+        :param request:
+        :return:
+        """
+        rep_data = {
+            'success': True,
+            'msg': '',
+        }
 
+        creator_id = request.data.get('creator_id', None)
+        parse_data_list = request.data.get('parse_data_list', None)
+        task_tag = request.data.get('task_tag', None)
+        file_mode = request.data.get('file_mode', None)
+        is_history = request.data.get('is_history', None)
+
+        if not creator_id:
+            rep_data['msg'] = 'creator_id不能为空！'
+            return Response(rep_data)
+        if not parse_data_list:
+            rep_data['msg'] = 'parse_data_list不能为空！'
+            return Response(rep_data)
+        if not task_tag:
+            rep_data['msg'] = 'task_tag不能为空！'
+            return Response(rep_data)
+        if not file_mode:
+            rep_data['msg'] = 'file_mode不能为空！'
+            return Response(rep_data)
+        if file_mode not in ['big_G', 'platform']:
+            rep_data['msg'] = 'file_mode错误！'
+            return Response(rep_data)
+        if is_history is None:
+            rep_data['msg'] = 'is_history不能为空！'
+            return Response(rep_data)
+
+        return Response(rep_data)
 
