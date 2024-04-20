@@ -951,6 +951,28 @@ class ReserveDownloadOrderInquirer:
         self.gen_excel()
 
 
+class OrderInquireByCode:
+    """
+    通过订单码查询订单（从excel中解析到的）
+    分为 大G码 和 平台码
+    """
+
+    def __init__(self, parse_order_code_list, available_fendian_id_list, order_code_mode, is_history):
+        """
+        :param parse_order_code_list:       解析后的订单码列表
+        :param available_fendian_id_list:   可用分店列表
+        :param order_code_mode:             订单码模式， 大G码 或 平台码
+        :param is_history:                  是否查询历史数据
+        """
+        self.parse_order_code_list = parse_order_code_list
+        self.available_fendian_id_list = available_fendian_id_list
+        self.order_code_mode = order_code_mode
+        self.is_history = is_history
+
+        self.queryset = None
+        self.data_count = 0
+
+
 if __name__ == '__main__':
     query = {
         "date_type": "order_date",
