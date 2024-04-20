@@ -6,37 +6,24 @@ from unicodedata import decimal
 from openpyxl import load_workbook
 
 
-def validate_red_upload_excel_row_big_G(index, row_data):
+def validate_red_upload_excel_row(index, row_data):
     rep_row_data = {
         'line_index': index,
-        'order_code': '',  # 大G码
+        'origin_code': '',  # 原始单号
+        'order_code': '',  # 解析单号
         'check_success': True,
     }
 
-    origin_big_g = row_data.get('单号')
+    origin_code = row_data.get('单号')
+    rep_row_data['origin_code'] = origin_code
     # 去掉空格
-    big_G_code = origin_big_g.replace(' ', '')
-    rep_row_data['order_code'] = big_G_code
-    if not big_G_code:
+    if origin_code:
+        order_code = origin_code.replace(' ', '')
+        rep_row_data['order_code'] = order_code
+        if not order_code:
+            rep_row_data['check_success'] = False
+    else:
         rep_row_data['check_success'] = False
-
-    return rep_row_data
-
-
-def validate_red_upload_excel_row_platform(index, row_data):
-    rep_row_data = {
-        'line_index': index,
-        'check_success': True,
-        'order_code': '',  # 平台单号
-    }
-
-    origin_platform_sn = row_data.get('单号')
-    # 去掉空格
-    platform_sn = origin_platform_sn.replace(' ', '')
-    rep_row_data['order_code'] = platform_sn
-    if not platform_sn:
-        rep_row_data['check_success'] = False
-
     return rep_row_data
 
 
@@ -45,15 +32,12 @@ class Read_RED_Upload_Excel(object):
     读取验证excel文件数据
     """
 
-    def __init__(self, file_path, col_field=None, file_mode='big_G', header_index=1):
+    def __init__(self, file_path, col_field=None, header_index=1):
         self.file_path = file_path
         self.header_index = header_index
         self.err_msg = ''
         self.col_field = col_field
-        if file_mode == 'big_G':
-            self.row_func = validate_red_upload_excel_row_big_G
-        else:
-            self.row_func = validate_red_upload_excel_row_platform
+        self.row_func = validate_red_upload_excel_row
 
     def validate_col(self, col_keys):
         """
@@ -120,10 +104,10 @@ class Read_RED_Upload_Excel(object):
 
 
 if __name__ == '__main__':
-    test_file_path = r'C:\Users\zjy\Desktop\redt1.xlsx'
+    test_file_path = r'D:\workProjectCode\ReserveDownloadSignleBackend\MEDIA_ROOT\RED_Upload_Excel\6623_1713595488_4544_mobj.xlsx'
     col_field_test = ['单号']
 
-    t = Read_RED_Upload_Excel(test_file_path, col_field_test, file_mode='big_G')
+    t = Read_RED_Upload_Excel(test_file_path, col_field_test)
     err, data = t.read_data()
     print('err:', err)
     print('data:', data)
