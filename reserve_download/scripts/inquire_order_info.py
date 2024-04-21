@@ -3,7 +3,7 @@ import time
 
 from scripts_public import _setup_django
 from reserve_download.models import ReserveDownload
-from reserve_download.scripts.gen_excel import LargeDataExport, COL_KEYS
+from reserve_download.scripts.gen_excel import LargeDataExport
 from reserve_download.serializers import ReserveDownloadOrderSerializer, ReserveDownloadOrderFlowSerializer
 from order.models import OrderOrder, OrderFlow, OrderTaobaoorder, OrderTaobaoorderOrders
 
@@ -1046,18 +1046,16 @@ class OrderInquireByCode:
         从 parse_order_code_list 中获取订单码列表
         :return:
         """
-        order_code_list = []
         for item in self.parse_order_code_list:
             if item.get('check_success'):
-                order_code_list.append(item.get('order_code'))
-        self.order_code_list = order_code_list
+                self.order_code_list.append(item.get('order_code'))
 
     def inquire_queryset(self):
         """
         根据情况 查询订单
         :return:
         """
-        if self.order_code_mode == 'big_g':
+        if self.order_code_mode == 'big_G':
             # 使用 order_code_list 直接查出 orderorder
             big_g_qs, no_permission_code_list = self.direct_filter_big_g_qs(
                 code_list=self.order_code_list,
@@ -1129,19 +1127,17 @@ class OrderInquireByCode:
         if not self.serializer_ok:
             return
 
-        if self.order_code_mode == 'big_g':
+        if self.order_code_mode == 'big_G':
             for code in self.no_permission_code_list:
-                data = {}
-                for key in COL_KEYS:
-                    data[key] = '无权限查看'
-                data['sn'] = code
+                data = {'sn': code, 'order_day': '无权查看', 'fen_dian_name': '无权查看'}
                 self.write_data_list.append(data)
         else:
             for code in self.no_permission_code_list:
-                data = {}
-                for key in COL_KEYS:
-                    data[key] = '无权限查看'
-                data['taobao_tbno'] = code
+                data = {
+                    'taobao_tbno': code,
+                    'order_day': '无权查看',
+                    'fen_dian_name': '无权查看'
+                }
                 self.write_data_list.append(data)
 
     def gen_excel(self):
