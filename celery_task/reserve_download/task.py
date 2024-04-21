@@ -66,7 +66,7 @@ def scheduled_download_by_upload_excel(parse_excel_data, available_fendian_id_li
         is_history=is_history,
         reserve_download_record_id=reserve_download_record_id,
         file_name=file_name,
-    )
+    ).exec()
     ReserveDownload.objects.filter(
         id=reserve_download_record_id
     ).update(
