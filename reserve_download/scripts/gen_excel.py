@@ -44,7 +44,7 @@ test_header_list = ['下单日期', '店铺', '单号', '班次', '客户昵称'
                     '拉新专员', '图片地址', '直播方式', '扫码时间', '扫码状态', '扫码人', '扫码历史流程', '品检状态', '品检类型', '品检备注',
                     '品检人', '品检时间', '预售订单',
                     '待结ID', '结扣ID', '结算ID']
-test_col_keys = [
+COL_KEYS = [
     'order_day', 'fen_dian_name', 'sn', 'ban_ci', '客户昵称', 'category_name', 'quantity', 'amount', '成本金额', '成本导入时间', 'finance_amount',
     '代购费', '证书费', '绳子费', '盒子费', 'yunfei', '其它', '多付金额', '附加扣款', '附加补款', '货主证书', 'kickback', '利润',
     'should_pay_merchant',
@@ -70,7 +70,7 @@ class LargeDataExport(object):
         self.data_list = data_list
         self.headers_list = test_header_list
         self.file_name = file_name
-        self.col_keys = test_col_keys
+        self.col_keys = COL_KEYS
         self.wb = Workbook(write_only=True)
         self.ws = self.wb.create_sheet()
 

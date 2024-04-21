@@ -3,9 +3,9 @@ import time
 
 from scripts_public import _setup_django
 from reserve_download.models import ReserveDownload
-from reserve_download.scripts.gen_excel import LargeDataExport
+from reserve_download.scripts.gen_excel import LargeDataExport, COL_KEYS
 from reserve_download.serializers import ReserveDownloadOrderSerializer, ReserveDownloadOrderFlowSerializer
-from order.models import OrderOrder, OrderFlow
+from order.models import OrderOrder, OrderFlow, OrderTaobaoorder, OrderTaobaoorderOrders
 
 
 class ReserveDownloadOrderInquirerOld:
@@ -957,7 +957,9 @@ class OrderInquireByCode:
     分为 大G码 和 平台码
     """
 
-    def __init__(self, parse_order_code_list, available_fendian_id_list, order_code_mode, is_history):
+    DATA_COUNT_LIMIT = 50000    # 数据量限制
+
+    def __init__(self, parse_order_code_list, available_fendian_id_list, order_code_mode, is_history, reserve_download_record_id=None, file_name=None):
         """
         :param parse_order_code_list:       解析后的订单码列表
         :param available_fendian_id_list:   可用分店列表
@@ -968,9 +970,213 @@ class OrderInquireByCode:
         self.available_fendian_id_list = available_fendian_id_list
         self.order_code_mode = order_code_mode
         self.is_history = is_history
+        self.reserve_download_record_id = reserve_download_record_id
+        self.file_name = file_name
 
-        self.queryset = None
-        self.data_count = 0
+        self.order_code_list = []           # parse_order_code_list 提取出的订单码列表
+        self.no_permission_code_list = []   # 不在权限范围内的订单码列表
+        self.queryset = None                # 查询集
+        self.data_count = 0                 # 数据量
+        self.write_data_list = []           # 写入 excel 的数据列表
+        self.serializer_ok = False          # 序列化是否成功
+        self.serializer_class = None        # 序列化类
+
+    @staticmethod
+    def direct_filter_big_g_qs(code_list, fendian_id_list):
+        """
+        直接使用大G编号查询 orderorder， 适用于 order_code_mode = big_g
+        然后对比出不在权限范围内的 大G编号列表
+        :param code_list:
+        :param fendian_id_list:
+        :return: big_G qs, no_permission_code_list
+        """
+        big_g_queryset = OrderOrder.objects.filter(
+            sn__in=code_list,
+            prefix__id__in=fendian_id_list
+        ).prefetch_related(
+                'prefix',
+                'category', 'shipper',
+                'zhubo', 'zhuli',
+                'item_status',
+                'play', 'play__changzhang', 'play__banzhang', 'play__shichangzhuanyuan', 'play__zhuli2',
+                'play__zhuli3', 'play__zhuli4', 'play__changkong', 'play__changkong1',
+                'play__changkong2', 'play__changkong3', 'play__kefu1', 'play__kefu2',
+                'play__kefu3', 'play__kefu4',
+                'rel_to_taobao_order', 'rel_to_taobao_order__taobaoorder',
+                'scan_code_flows'
+            )
+        no_permission_code_list = list(set(code_list) - set(big_g_queryset.values_list('sn', flat=True)))
+        return big_g_queryset, no_permission_code_list
+
+    @staticmethod
+    def filter_big_g_qs_by_platform_code(code_list, fendian_id_list):
+        """
+        使用平台码查询 orderorder， 适用于 order_code_mode = platform_code
+        :param code_list:
+        :param fendian_id_list:
+        :return: big_G qs, no_permission_code_list
+        """
+        platform_order_queryset = OrderTaobaoorder.objects.filter(
+            tbno__in=code_list,
+            prefix__id__in=fendian_id_list
+        )
+        # 中介关系表
+        rel_qs_id_list = OrderTaobaoorderOrders.objects.filter(
+            taobaoorder__in=platform_order_queryset
+        ).values_list('order__id', flat=True)
+        big_g_queryset = OrderOrder.objects.filter(
+            id__in=rel_qs_id_list
+        ).prefetch_related(
+                'prefix',
+                'category', 'shipper',
+                'zhubo', 'zhuli',
+                'item_status',
+                'play', 'play__changzhang', 'play__banzhang', 'play__shichangzhuanyuan', 'play__zhuli2',
+                'play__zhuli3', 'play__zhuli4', 'play__changkong', 'play__changkong1',
+                'play__changkong2', 'play__changkong3', 'play__kefu1', 'play__kefu2',
+                'play__kefu3', 'play__kefu4',
+                'rel_to_taobao_order', 'rel_to_taobao_order__taobaoorder',
+                'scan_code_flows'
+            )
+        no_permission_code_list = list(set(code_list) - set(platform_order_queryset.values_list('tbno', flat=True)))
+        return big_g_queryset, no_permission_code_list
+
+    def get_order_code_list(self):
+        """
+        从 parse_order_code_list 中获取订单码列表
+        :return:
+        """
+        order_code_list = []
+        for item in self.parse_order_code_list:
+            if item.get('check_success'):
+                order_code_list.append(item.get('order_code'))
+        self.order_code_list = order_code_list
+
+    def inquire_queryset(self):
+        """
+        根据情况 查询订单
+        :return:
+        """
+        if self.order_code_mode == 'big_g':
+            # 使用 order_code_list 直接查出 orderorder
+            big_g_qs, no_permission_code_list = self.direct_filter_big_g_qs(
+                code_list=self.order_code_list,
+                fendian_id_list=self.available_fendian_id_list
+            )
+            self.no_permission_code_list = no_permission_code_list
+        else:
+            # 使用 order_code_list 查出平台订单，再反查 order order
+            big_g_qs, no_permission_code_list = self.filter_big_g_qs_by_platform_code(
+                code_list=self.order_code_list,
+                fendian_id_list=self.available_fendian_id_list
+            )
+            self.no_permission_code_list = no_permission_code_list
+
+        if self.is_history:
+            # 使用 big_g_qs 查出 order flow
+            self.queryset = OrderFlow.objects.filter(
+                order__in=big_g_qs
+            ).prefetch_related(
+                'order', 'order__prefix', 'order__category', 'order__shipper', 'order__zhubo', 'order__zhuli',
+                'order__item_status', 'order__play', 'order__play__changzhang', 'order__play__banzhang',
+                'order__play__shichangzhuanyuan', 'order__play__zhuli2', 'order__play__zhuli3', 'order__play__zhuli4',
+                'order__play__changkong', 'order__play__changkong1', 'order__play__changkong2', 'order__play__changkong3',
+                'order__play__kefu1', 'order__play__kefu2', 'order__play__kefu3', 'order__play__kefu4', 'order__play__classs',
+                'order__rel_to_taobao_order', 'order__rel_to_taobao_order__taobaoorder',
+                'order__scan_code_flows', 'owner', 'status',
+            )
+            self.serializer_class = ReserveDownloadOrderFlowSerializer
+            self.data_count = self.queryset.count()
+        else:
+            # 直接使用 big_g
+            self.queryset = big_g_qs
+            self.data_count = self.queryset.count()
+            self.serializer_class = ReserveDownloadOrderSerializer
+
+    def only_check_count(self):
+        """
+        只校验数量
+        :return:
+        """
+        self.get_order_code_list()
+        self.inquire_queryset()
+        if self.data_count > self.DATA_COUNT_LIMIT:
+            return False, f'数据量为{self.data_count}, 超过{self.DATA_COUNT_LIMIT}条，禁止导出，请修改筛选条件'
+        if self.data_count == 0:
+            return False, '数据量为0，请修改筛选条件'
+        return True, f'数据量为{self.data_count}'
+
+    def exec_serializer(self):
+        """
+        执行序列化
+        :return:
+        """
+        try:
+            self.write_data_list = self.serializer_class(self.queryset, many=True).data
+            self.serializer_ok = True
+        except Exception as e:
+            self.serializer_ok = False
+            self.write_data_list = []
+            ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=6, task_result=str(e), is_success=False)
+
+    def append_no_permission_code_data(self):
+        """
+        向序列化后的 write_data_list 中，追加不在权限范围内的订单码数据，内容为 “无权限查看”
+        :return:
+        """
+        if len(self.no_permission_code_list) == 0:
+            return
+        if not self.serializer_ok:
+            return
+
+        if self.order_code_mode == 'big_g':
+            for code in self.no_permission_code_list:
+                data = {}
+                for key in COL_KEYS:
+                    data[key] = '无权限查看'
+                data['sn'] = code
+                self.write_data_list.append(data)
+        else:
+            for code in self.no_permission_code_list:
+                data = {}
+                for key in COL_KEYS:
+                    data[key] = '无权限查看'
+                data['taobao_tbno'] = code
+                self.write_data_list.append(data)
+
+    def gen_excel(self):
+        if not self.serializer_ok:
+            return False
+        # 生成 excel
+        try:
+            LargeDataExport(data_list=self.write_data_list, file_name=self.file_name).save()
+            ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=7, is_success=True)
+            return
+        except Exception as e:
+            ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=8, task_result=str(e), is_success=False)
+            return
+
+    def exec(self):
+        # 1, 查询数据
+        ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=4)
+        self.get_order_code_list()
+        self.inquire_queryset()
+        # 2， 更新数据量,并校验
+        ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(data_count=self.data_count)
+        if self.data_count > self.DATA_COUNT_LIMIT:
+            ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=6, task_result=f'数据量为{self.data_count}, 超过{self.DATA_COUNT_LIMIT}条，禁止导出，请修改筛选条件', is_success=False)
+            return False
+        if self.data_count == 0:
+            ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=6, task_result='数据量为0，请修改筛选条件', is_success=False)
+            return False
+        # 3， 执行序列化
+        self.exec_serializer()
+        if not self.serializer_ok:
+            return False
+        # 4， 追加无权限查看的数据
+        self.append_no_permission_code_data()
+        # 5， 生成 excel
+        self.gen_excel()
 
 
 if __name__ == '__main__':
@@ -1143,6 +1349,7 @@ if __name__ == '__main__':
         "shipper_id_list": [],
         "creator_id": 6623
     }
-    t = ReserveDownloadOrderInquirer(query_param_dict=query)
-    t.only_check_count()
-    print('数量：', t.data_count)
+    # t = ReserveDownloadOrderInquirer(query_param_dict=query)
+    # t.only_check_count()
+    # print('数量：', t.data_count)
+
