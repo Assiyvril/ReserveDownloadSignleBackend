@@ -20,7 +20,7 @@ from shop.models import ShopSerialprefix
 from user.models import AccountMyuser
 from utils.pagination import CustomV3Pagination
 from utils.renderer import CustomV3Renderer
-from celery_task.reserve_download.task import scheduled_download_by_params
+from celery_task.reserve_download.task import scheduled_download_by_params, scheduled_download_by_upload_excel
 
 
 class ReserveDownloadViewSet(viewsets.ModelViewSet):
@@ -495,6 +495,11 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         task_tag = request.data.get('task_tag', None)
         file_mode = request.data.get('file_mode', None)
         is_history = request.data.get('is_history', None)
+        available_fendian_id_list = request.data.get('available_fendian_id_list', None)
+
+        if not available_fendian_id_list:
+            rep_data['msg'] = 'available_fendian_id_list不能为空！'
+            return Response(rep_data)
 
         if not creator_id:
             rep_data['msg'] = 'creator_id不能为空！'
@@ -514,6 +519,40 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         if is_history is None:
             rep_data['msg'] = 'is_history不能为空！'
             return Response(rep_data)
+
+        creator_obj = AccountMyuser.objects.filter(id=creator_id).first()
+        if not creator_obj:
+            rep_data['msg'] = '创建者不存在！'
+            return Response(rep_data)
+
+        # 创建任务记录
+        file_name = f'{creator_id}_{int(time.time())}_{random.randint(1000, 9999)}_.xlsx'
+        record_obj_id = ReserveDownload.objects.create(
+            creator=creator_obj,
+            filter_condition={
+                'is_excel': True,
+                'is_history': is_history,
+                'excel_file_mode': file_mode,
+            },
+            fendian_info=[],
+            task_status=0,
+            file_name=file_name,
+            task_celery_id=None,
+            tag=task_tag,
+            data_count=None,
+        ).id
+
+        # 创建任务
+        try:
+            task = scheduled_download_by_upload_excel.apply_async(
+                args=(parse_data_list, available_fendian_id_list, file_mode, is_history, record_obj_id, file_name),
+            )
+            ReserveDownload.objects.filter(id=record_obj_id).update(task_celery_id=task.id, task_status=3)
+            rep_data['msg'] = '任务创建成功'
+            rep_data['success'] = True
+        except Exception as e:
+            rep_data['msg'] = f'任务创建失败！{e}'
+            ReserveDownload.objects.filter(id=record_obj_id).update(task_status=2, task_result=str(e))
 
         return Response(rep_data)
 
