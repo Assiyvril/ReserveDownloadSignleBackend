@@ -16,6 +16,7 @@ class ReserveDownload(models.Model):
         (6, '查询失败，任务终止'),
         (7, '文件生成完毕'),
         (8, '文件生成失败'),
+        (9, '任务成功，文件已过期'),
     )
     creator = models.ForeignKey(AccountMyuser, verbose_name='创建人', on_delete=models.CASCADE)
     created_time = models.DateTimeField(verbose_name='创建时间', auto_now_add=True)
@@ -30,6 +31,8 @@ class ReserveDownload(models.Model):
     is_success = models.BooleanField(verbose_name='是否成功', default=False)
     tag = models.CharField(verbose_name='标签备注', max_length=255, null=True, blank=True)
     data_count = models.IntegerField(verbose_name='数据量', null=True, blank=True)
+    # 24-04-21 添加字段，用于给前端判断文件可否下载。不再使用 is_success 字段来判断，is_success 仅用于判断任务是否成功
+    can_download = models.BooleanField(verbose_name='文件可否下载', default=False, help_text='是否可以下载文件，文件生成后，设为True, 过期删除后，将此字段置为False')
 
     class Meta:
         verbose_name = '预约下载'
