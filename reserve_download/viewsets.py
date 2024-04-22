@@ -65,7 +65,7 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             'result': False,
             'data': [],
         }
-        status_qs = ItemStatus.objects.filter(is_active=True)
+        status_qs = ItemStatus.objects.filter(is_active=True, shop_id=2)
         # rep_data['result'] = True
         # rep_data['data'] = OrderScanCodeStatusChoiceListSerializer(status_qs, many=True).data
 
