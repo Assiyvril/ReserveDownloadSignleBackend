@@ -556,3 +556,49 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
 
         return Response(rep_data)
 
+    @action(methods=['post'], detail=False)
+    def clear_old_files(self, request):
+        rep_data = {
+            'msg': '',
+            'result': False,
+        }
+
+        start_date = request.data.get('start_date', None)
+        end_date = request.data.get('end_date', None)
+
+        if not start_date or not end_date:
+            rep_data['msg'] = '开始时间和结束时间不能为空！'
+            return Response(rep_data)
+        start_date_obj = datetime.datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_date_obj = datetime.datetime.strptime(end_date, '%Y-%m-%d').date()
+        if start_date_obj > end_date_obj:
+            rep_data['msg'] = '开始时间不能大于结束时间！'
+            return Response(rep_data)
+        # 结束时间距离现在不能小于 3 天
+        if (datetime.datetime.now().date() - end_date_obj).days < 3:
+            rep_data['msg'] = '结束时间距离现在不能小于 3 天！'
+            return Response(rep_data)
+
+        # 删除日期范围内的文件
+        file_dir = os.path.join(settings.MEDIA_ROOT, 'Export_Excel', 'Reserve_Download')
+        delete_qs = ReserveDownload.objects.filter(
+            created_time__date__gte=start_date_obj,
+            created_time__date__lte=end_date_obj,
+            can_download=True,
+        )
+        for obj in delete_qs:
+            file_name = obj.file_name
+            file_path = os.path.join(file_dir, file_name)
+            # 检测文件是否存在
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                    obj.can_download = False
+                    obj.task_status = 9
+                    obj.save()
+                except Exception as e:
+                    rep_data['msg'] += f'{obj.id}-删除失败！{str(e)}\n'
+            else:
+                continue
+        rep_data['result'] = True
+        return Response(rep_data)
