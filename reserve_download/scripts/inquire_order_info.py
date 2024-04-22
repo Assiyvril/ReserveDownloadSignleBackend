@@ -806,13 +806,14 @@ class ReserveDownloadOrderInquirer:
                       kick_settlement_qs | special_order_qs | need_bind_goods_qs | re_record_order_qs)
         return combine_qs
 
-    def update_task_status(self, task_status_num=None, data_count=None, task_result_str=None, is_success=None):
+    def update_task_status(self, task_status_num=None, data_count=None, task_result_str=None, is_success=None, can_download=False):
         """
         更新任务状态
         :param task_status_num:     状态阶段
         :param data_count:          数据量
         :param task_result_str:     任务结果
         :param is_success:          是否成功
+        :param can_download:        是否可以下载
         :return:
         有哪个参数就更新哪个参数
         """
@@ -827,6 +828,8 @@ class ReserveDownloadOrderInquirer:
             update_dict['task_result'] = task_result_str
         if is_success:
             update_dict['is_success'] = is_success
+        if can_download:
+            update_dict['can_download'] = True
         ReserveDownload.objects.filter(
             id=self.reserve_download_record_id
         ).update(
@@ -919,7 +922,7 @@ class ReserveDownloadOrderInquirer:
         # 生成 excel
         try:
             LargeDataExport(data_list=self.write_data_list, file_name=self.file_name).save()
-            self.update_task_status(task_status_num=7, is_success=True)
+            self.update_task_status(task_status_num=7, is_success=True, can_download=True)
             return
         except Exception as e:
             self.update_task_status(task_status_num=8, task_result_str=f'生成 excel 异常：{e}', is_success=False)
@@ -1146,7 +1149,7 @@ class OrderInquireByCode:
         # 生成 excel
         try:
             LargeDataExport(data_list=self.write_data_list, file_name=self.file_name).save()
-            ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=7, is_success=True)
+            ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=7, is_success=True, can_download=True)
             return
         except Exception as e:
             ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=8, task_result=str(e), is_success=False)
