@@ -40,7 +40,6 @@ class ReserveDownloadRecordSerializer(serializers.ModelSerializer):
         # 去掉最后的 ', '
         return fendian_name_text[:-2]
 
-
     def to_representation(self, instance):
         """
         将日期时间格式化为 %Y-%m-%d %H:%M:%S
@@ -74,7 +73,7 @@ class ReserveDownloadRecordSerializer(serializers.ModelSerializer):
         model = ReserveDownload
         fields = ['id', 'creator_name', 'creator_id', 'created_time', 'filter_condition', 'fendian_info', 'task_status', 'task_exec_start_time',
                   'task_exec_end_time', 'data_count', 'file_url', 'fen_dian_name_text',
-                  'task_status_text', 'task_celery_id', 'task_result', 'file_name', 'is_success', 'tag']
+                  'task_status_text', 'task_celery_id', 'task_result', 'file_name', 'is_success', 'tag', 'can_download']
 
 
 class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
