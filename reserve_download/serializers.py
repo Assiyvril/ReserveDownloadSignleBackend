@@ -117,6 +117,8 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
     chang_zhang2_name = serializers.CharField(source='play.changzhang1.first_name', read_only=True, help_text='厂长2', label='厂长2', default='')
     code_scaner = serializers.SerializerMethodField(read_only=True, help_text='扫码人', label='扫码人')
 
+    total_paid = serializers.SerializerMethodField(read_only=True, help_text='实付金额，所有平台订单的 p_amount 之和', label='实付金额')
+
     def get_kickback(self, obj):
         """
         扣点, 根据店铺类型，判断货主的扣点
@@ -270,6 +272,20 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
     def get_ban_ci(self, obj):
         return '无'
 
+    def get_total_paid(self, obj):
+        """
+        实付金额
+        :param obj:
+        :return:
+        """
+        taobao_qs = self.get_taobao_order_qs(obj)
+        if not taobao_qs:
+            return '无'
+        total_paid = 0
+        for taobao_obj in taobao_qs:
+            total_paid += taobao_obj.p_amount
+        return total_paid
+
     class Meta:
         model = OrderOrder
         fields = [
@@ -278,7 +294,7 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
             'item_status_name', 'taobao_tbno', 'yhq', 'itemcode', 'chang_zhang_name', 'zhibo_type_text',
             'title', 'taobao_order_pay_time', 'link_type', 'scan_code_time', 'ban_ci', 'ban_ci_zhang',
             'shi_chang_ren_yuan', 'zhu_li_2', 'zhu_li_3', 'zhu_li_4', 'chang_kong_1', 'chang_kong_2', 'chang_kong_3',
-            'chang_kong_4', 'ke_fu_1', 'ke_fu_2', 'ke_fu_3', 'ke_fu_4', 'chang_zhang2_name', 'code_scaner'
+            'chang_kong_4', 'ke_fu_1', 'ke_fu_2', 'ke_fu_3', 'ke_fu_4', 'chang_zhang2_name', 'code_scaner', 'total_paid'
         ]
 
 
@@ -370,6 +386,8 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
 
     code_scaner = serializers.CharField(source='owner.first_name', read_only=True, help_text='扫码人', label='扫码人', default='')
     chang_zhang2_name = serializers.CharField(source='order.play.changzhang1.first_name', read_only=True, help_text='厂长2', label='厂长2', default='')
+
+    total_paid = serializers.SerializerMethodField(read_only=True, help_text='实付金额，所有平台订单的 p_amount 之和', label='实付金额')
 
     def get_kickback(self, obj):
         """
@@ -509,6 +527,20 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
     def get_ban_ci(self, obj):
         return '无'
 
+    def get_total_paid(self, obj):
+        """
+        实付金额
+        :param obj:
+        :return:
+        """
+        taobao_qs = self.get_taobao_order_qs(obj)
+        if not taobao_qs:
+            return '无'
+        total_paid = 0
+        for taobao_obj in taobao_qs:
+            total_paid += taobao_obj.p_amount
+        return total_paid
+
     class Meta:
         model = OrderFlow
         fields = [
@@ -517,7 +549,7 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
             'item_status_name', 'taobao_tbno', 'yhq', 'itemcode', 'chang_zhang_name', 'zhibo_type_text',
             'title', 'taobao_order_pay_time', 'link_type', 'scan_code_time', 'ban_ci', 'ban_ci_zhang',
             'shi_chang_ren_yuan', 'zhu_li_2', 'zhu_li_3', 'zhu_li_4', 'chang_kong_1', 'chang_kong_2', 'chang_kong_3',
-            'chang_kong_4', 'ke_fu_1', 'ke_fu_2', 'ke_fu_3', 'ke_fu_4', 'chang_zhang2_name', 'code_scaner'
+            'chang_kong_4', 'ke_fu_1', 'ke_fu_2', 'ke_fu_3', 'ke_fu_4', 'chang_zhang2_name', 'code_scaner', 'total_paid'
         ]
 
 

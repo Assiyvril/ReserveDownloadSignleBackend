@@ -51,3 +51,63 @@
 需绑货品  d9    and order_order.status<>'0' and order_order.is_bindgoods=true
 重录订单  d10   and order_order.status<>'0' and order_order.is_reorder=1
 
+
+# 04-22 字段梳理
+## 目前留空的
+
+扫码历史      大哥也空
+品检状态      大哥也空
+品检类型      大哥也空
+品检备注      大哥也空
+品检人       大哥也空
+品检时间      大哥也空
+预售订单      大哥也空
+待结ID        大哥也空
+结扣ID        大哥也空
+结算ID        大哥也空
+成本导入时间      大哥也空
+录单员           大哥也空
+交易截图        大哥也空
+标题货品码       大哥也空
+
+
+代购费      order.fee
+证书费      order.certificate
+绳子费      order.shengzi
+盒子费      order.box
+其它        order.other
+多付金额     order.overage
+图片地址     QiDeBaoOrderInfo(order_qdborderlist 启德宝订单信息表) 的 picurl
+备注        order.desc
+自动状态     order.autostatus
+订单创建时间    order.created_time
+证书           order.is_zhengshu 有或无
+发货记录        order.sendgoodstype  
+货主备注        order.shipper_memo
+场次ID         order.play__id
+班次时间        order-->play-->classs  start_time - end_time
+是否打印        order.printstatus
+
+流程最近更新者    ? orderFlow.owner
+
+客户昵称    ？
+成本金额    ？
+附加扣款    ？
+附加补款    ？
+货主证书    ？
+利润       ？
+扣点调否    ？
+调扣ID     ？  
+差异扣点    ？
+售后金额    ？
+系统状态    ？
+退款金额    ？
+退款状态    ？
+订单更新时间   ?
+支付方式      ?
+是否加帐      ?
+拉新专员      ?
+杂项支出      ?
+销售专员      ?
+转粉专员      ?
+关联店铺      ?

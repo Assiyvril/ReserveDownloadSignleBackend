@@ -31,7 +31,7 @@ EXPORT_DIR = os.path.join(settings.MEDIA_ROOT, 'Export_Excel', 'Reserve_Download
 #         ]
 
 
-test_header_list = ['下单日期', '店铺', '单号', '班次', '客户昵称', '货品', '数量', '金额', '成本金额', '成本导入时间', '固定货款', '代购费',
+test_header_list = ['下单日期', '店铺', '单号', '班次', '客户昵称', '货品', '数量', '金额', '成本金额', '实付金额', '成本导入时间', '固定货款', '代购费',
                     '证书费', '绳子费', '盒子费',
                     '运费', '其它', '多付金额', '附加扣款', '附加补款', '货主证书', '扣点', '利润', '应付商家', '扣点调否', '扣调ID', '差异扣点',
                     '售后金额', '货主', '货主ID',
@@ -45,7 +45,7 @@ test_header_list = ['下单日期', '店铺', '单号', '班次', '客户昵称'
                     '品检人', '品检时间', '预售订单',
                     '待结ID', '结扣ID', '结算ID']
 COL_KEYS = [
-    'order_day', 'fen_dian_name', 'sn', 'ban_ci', '客户昵称', 'category_name', 'quantity', 'amount', '成本金额', '成本导入时间', 'finance_amount',
+    'order_day', 'fen_dian_name', 'sn', 'ban_ci', '客户昵称', 'category_name', 'quantity', 'amount', '成本金额', 'total_paid', '成本导入时间', 'finance_amount',
     '代购费', '证书费', '绳子费', '盒子费', 'yunfei', '其它', '多付金额', '附加扣款', '附加补款', '货主证书', 'kickback', '利润',
     'should_pay_merchant',
     '扣点调否', '调扣ID', '差异扣点', '售后金额', 'shipper_name', 'shipper_id', 'zhubo_name', 'zhuli_name', '备注', '录单员', '系统状态',
