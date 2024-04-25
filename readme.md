@@ -52,25 +52,12 @@
 重录订单  d10   and order_order.status<>'0' and order_order.is_reorder=1
 
 
-# 04-22 字段梳理
-## 目前留空的
+# 需要新增在导出表格中的字段
 
-扫码历史      大哥也空
-品检状态      大哥也空
-品检类型      大哥也空
-品检备注      大哥也空
-品检人       大哥也空
-品检时间      大哥也空
-预售订单      大哥也空
-待结ID        大哥也空
-结扣ID        大哥也空
-结算ID        大哥也空
-成本导入时间      大哥也空
-录单员           大哥也空
-交易截图        大哥也空
-标题货品码       大哥也空
+## 已经整理出的字段
 
-
+扫码历史      最新的一条 order flow
+品检状态      order is_checkgoods
 代购费      order.fee
 证书费      order.certificate
 绳子费      order.shengzi
@@ -87,27 +74,49 @@
 场次ID         order.play__id
 班次时间        order-->play-->classs  start_time - end_time
 是否打印        order.printstatus
+流程最近更新者    最新的一条 orderFlow.owner
+预售订单      order_order.is_presale
+系统状态    order status
+退款状态    就是 平台状态 OrderOrder 中的 autostatus， 订单未退 、订单退款、部分退款
 
-流程最近更新者    ? orderFlow.owner
 
-客户昵称    ？
-成本金额    ？
-附加扣款    ？
-附加补款    ？
-货主证书    ？
-利润       ？
-扣点调否    ？
-调扣ID     ？  
-差异扣点    ？
-售后金额    ？
-系统状态    ？
-退款金额    ？
-退款状态    ？
-订单更新时间   ?
-支付方式      ?
-是否加帐      ?
+## ~~未知的字段，需要确认~~ 已确认
+
+品检类型      xda_dictionary_details.label as checkgoodstype； OrderOrder 的 checkgoodstype_id  字段指向 xda_dictionary_details ，并且要满足 xda_dictionary_details 的 dictionary_id = 32
+品检备注      order_order.checkgoods_desc
+品检人       order_order.checkgoods_creator_id
+品检时间      order_order.checkgoods_created_time
+
+交易截图        order_taobaoorder.imglist as pay_tran_img
+
+成本金额    order_order.costamount if order_order.costamount else 0,
+附加扣款    order_order.addlamount1 if order_order.addlamount1 else 0
+附加补款    order_order.addlamount2 if order_order.addlamount2 else 0
+
+调扣ID     order_order.finance_activitykick_id   
+
+退款金额    order_order.refund_fee
+订单更新时间   order_order.last_modified
+
+是否加帐      '加帐' if play and play.is_add >= 1 else '正常' 例： 正常、加帐
+
+
+## 先留空
 拉新专员      ?
 杂项支出      ?
 销售专员      ?
 转粉专员      ?
 关联店铺      ?
+支付方式      ?
+货主证书    ？
+利润       ？
+扣点调否    ？ 例： 未知
+差异扣点    ？ 例： ---
+售后金额    ？ 例： 0
+待结ID        ？
+结扣ID        ？
+结算ID        ？
+成本导入时间      ？
+录单员           ？
+标题货品码       ？
+客户昵称    ？
