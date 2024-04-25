@@ -69,7 +69,7 @@
 自动状态     order.autostatus
 订单创建时间    order.created_time
 证书           order.is_zhengshu 有或无
-发货记录        order.sendgoodstype  
+发货记录        order.item_status.sendgoodstype  
 货主备注        order.shipper_memo
 场次ID         order.play__id
 班次时间        order-->play-->classs  start_time - end_time
@@ -93,7 +93,7 @@
 附加扣款    order_order.addlamount1 if order_order.addlamount1 else 0
 附加补款    order_order.addlamount2 if order_order.addlamount2 else 0
 
-调扣ID     order_order.finance_activitykick_id   
+调扣ID     order_order.activitykick_id   
 
 退款金额    order_order.refund_fee
 订单更新时间   order_order.last_modified
