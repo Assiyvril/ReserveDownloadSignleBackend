@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from order.models import ItemStatus, OrderTaobaoorder, OrderOrder, OrderFlow
+from order.models import ItemStatus, OrderTaobaoorder, OrderOrder, OrderFlow, QiDeBaoOrderInfo
 from reserve_download.models import ReserveDownload
 from shipper.models import ShopShipper
 from shop.models import ShopSerialprefix
@@ -82,7 +82,7 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
     """
     order_day = serializers.CharField(source='day', read_only=True, help_text='下单日期', label='下单日期')
     fen_dian_name = serializers.CharField(source='prefix.name', read_only=True, help_text='店铺名称', label='店铺名称', default='')
-    category_name = serializers.CharField(source='category.name', read_only=True, help_text='货品', label='货品', default='')
+    category_name = serializers.SerializerMethodField(help_text='货品', label='货品')
     kickback = serializers.SerializerMethodField(help_text='扣点', label='扣点')
     should_pay_merchant = serializers.SerializerMethodField(help_text='应付商家', label='应付商家')
     shipper_name = serializers.CharField(source='shipper.name', read_only=True, help_text='货主', label='货主', default='')
@@ -119,9 +119,276 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
 
     total_paid = serializers.SerializerMethodField(read_only=True, help_text='实付金额，所有平台订单的 p_amount 之和', label='实付金额')
     # 24-04-25 新增
-    """ 扫码历史, 品检状态, 代购费, 证书费, 绳子费, 盒子费, 其它, 多付金额, 图片地址, 备注, 自动状态, 订单创建时间, 证书, 发货记录, 货主备注, 场次ID, 班次时间, 是否打印,
-        流程最近更新者, 预售订单, 系统状态, 退款状态"""
-    # scan_code_history = pass
+    """ 扫码历史, 品检状态, 代购费, 证书费, 绳子费, 盒子费, 其它费用, 多付金额, 图片地址, 备注, 自动状态, 订单创建时间, 证书, 发货记录, 货主备注, 场次ID, 班次时间, 是否打印,
+        流程最近更新者, 预售订单, 系统状态, 退款状态, 品检类型, 品检备注, 品检人, 品检时间, 交易截图,  成本金额, 附加扣款, 附加补款, 调扣ID, 退款金额, 订单更新时间, 是否加帐
+        分类一级、分类二级、分类三级、分类四级、最晚发货时间"""
+    scan_code_history = serializers.SerializerMethodField(read_only=True, help_text='扫码历史, 最新的一条 order_flow_obj ', label='扫码历史')
+    check_good_status = serializers.CharField(source='get_is_checkgoods_display', read_only=True, help_text='品检状态', label='品检状态', default='')
+    dai_gou_fee = serializers.FloatField(source='fee', read_only=True, help_text='代购费', label='代购费', default=0)
+    zheng_shu_fee = serializers.FloatField(source='certificate', read_only=True, help_text='证书费', label='证书费', default=0)
+    sheng_zi_fee = serializers.FloatField(source='shengzi', read_only=True, help_text='绳子费', label='绳子费', default=0)
+    he_zi_fee = serializers.FloatField(source='box', read_only=True, help_text='盒子费', label='盒子费', default=0)
+    other_fee = serializers.FloatField(source='other', read_only=True, help_text='其它', label='其它', default=0)
+    duo_fu_jin_e = serializers.FloatField(source='overage', read_only=True, help_text='多付金额', label='多付金额', default=0)
+    goods_image_url = serializers.SerializerMethodField(read_only=True, help_text='商品图片地址', label='图片地址')
+    desc = serializers.CharField(read_only=True, help_text='备注', label='备注', default='')
+    auto_status_text = serializers.SerializerMethodField(read_only=True, help_text='自动状态', label='自动状态')
+    order_create_time = serializers.DateTimeField(source='created_time', read_only=True, help_text='订单创建时间', label='订单创建时间', format='%Y-%m-%d %H:%M:%S')
+    zheng_shu = serializers.SerializerMethodField(read_only=True, help_text='证书', label='证书')
+    fa_huo_ji_lu = serializers.SerializerMethodField(read_only=True, help_text='证书', label='证书')
+    shipper_memo = serializers.CharField(read_only=True, help_text='货主备注', label='货主备注', default='')
+    chang_ci_id = serializers.IntegerField(source='play_id', read_only=True, help_text='场次ID', label='场次ID', default='')
+    ban_ci_time = serializers.SerializerMethodField(read_only=True, help_text='班次时间', label='班次时间')
+    is_print = serializers.SerializerMethodField(read_only=True, help_text='是否打印', label='是否打印')
+    flow_newest_updater = serializers.SerializerMethodField(read_only=True, help_text='流程最近更新者', label='流程最近更新者')
+    is_presale_order = serializers.SerializerMethodField(read_only=True, help_text='预售订单', label='预售订单')
+    system_status = serializers.SerializerMethodField(read_only=True, help_text='预售订单', label='预售订单')
+    refund_status = serializers.SerializerMethodField(read_only=True, help_text='退款状态', label='退款状态')
+    check_good_category = serializers.SerializerMethodField(read_only=True, help_text='品检类型', label='品检类型')
+    checkgoods_desc = serializers.CharField(read_only=True, help_text='品检备注', label='品检备注', default='')
+    checkgoods_checker = serializers.CharField(source='checkgoods_creator.first_name', read_only=True, help_text='品检人', label='品检人', default='')
+    checkgoods_time = serializers.DateTimeField(source='checkgoods_created_time', read_only=True, help_text='品检时间', label='品检时间', format='%Y-%m-%d %H:%M:%S')
+    trade_screenshot = serializers.SerializerMethodField(read_only=True, help_text='交易截图', label='交易截图')
+    cost_amount = serializers.FloatField(source='costamount', read_only=True, help_text='成本金额', label='成本金额', default=0)
+    additional_deduction = serializers.FloatField(source='addlamount1', read_only=True, help_text='附加扣款', label='附加扣款', default=0)
+    additional_payment = serializers.FloatField(source='addlamount2', read_only=True, help_text='附加补款', label='附加补款', default=0)
+    deduction_id = serializers.IntegerField(source='activitykick_id', read_only=True, help_text='调扣ID', label='调扣ID', default=0)
+    refund_amount = serializers.FloatField(source='refund_fee', read_only=True, help_text='退款金额', label='退款金额', default=0)
+    order_update_time = serializers.DateTimeField(source='last_modified', read_only=True, help_text='订单更新时间', label='订单更新时间', format='%Y-%m-%d %H:%M:%S')
+    is_add_account = serializers.SerializerMethodField(read_only=True, help_text='是否加帐', label='是否加帐')
+    category_level_1 = serializers.SerializerMethodField(read_only=True, help_text='分类一级', label='分类一级')
+    category_level_2 = serializers.SerializerMethodField(read_only=True, help_text='分类二级', label='分类二级')
+    category_level_3 = serializers.SerializerMethodField(read_only=True, help_text='分类三级', label='分类三级')
+    category_level_4 = serializers.SerializerMethodField(read_only=True, help_text='分类四级', label='分类四级')
+    delivery_time_dead_line = serializers.DateTimeField(source='latestdeliverytime', read_only=True, help_text='最晚发货时间', label='最晚发货时间',
+                                                        default=None, format='%Y-%m-%d %H:%M:%S')
+
+    def get_category_name(self, obj):
+        category_obj = obj.category
+        if not category_obj:
+            return '未知'
+        category_family = category_obj.get_my_family()
+        if not category_family:
+            return category_obj.name
+        name = ''
+        for item in category_family:
+            name += item.name + '->'
+        return name[:-2]
+
+    def get_scan_code_history(self, obj):
+        order_flow_obj = self.get_newest_order_flow_obj(obj)
+        if not order_flow_obj:
+            return '无'
+        return order_flow_obj.status.name
+
+    def get_goods_image_url(self, obj):
+        qi_de_bao_order_obj = QiDeBaoOrderInfo.objects.filter(order=obj).first()
+        if not qi_de_bao_order_obj:
+            return '无'
+        return qi_de_bao_order_obj.picurl or '无'
+
+    def get_auto_status_text(self, obj):
+        auto_status = obj.autostatus
+        map_dict = {
+            '1': '暂未同步',
+            '2': '订单退款',
+            '3': '交易成功',
+            '4': '退款创建',
+            '5': '退款关闭',
+            '7': '订单发货',
+            '8': '交易关闭',
+            '9': '等待发货',
+            '10': '等待付款',
+            '11': '部分退款',
+            '12': '新增订单',
+            '13': '订单未退',
+        }
+        return map_dict.get(auto_status, '未知')
+
+    def get_zheng_shu(self, obj):
+        """
+        证书
+        :param obj:
+        :return:
+        """
+        if obj.is_zhengshu == 1:
+            return '有证书'
+        elif obj.is_zhengshu == 0:
+            return '无证书'
+
+    def get_fa_huo_ji_lu(self, obj):
+        """
+        发货记录
+        :param obj:
+        :return:
+        """
+        iem_satus_obj = obj.item_status
+        if not iem_satus_obj:
+            return '未知'
+        sendgoodstype = iem_satus_obj.sendgoodstype
+        if sendgoodstype == 1:
+            return '已发货'
+        elif sendgoodstype == 0:
+            return '未发货'
+        else:
+            return '无记录'
+
+    def get_ban_ci_time(self, obj):
+        live_play_obj = obj.play
+        if not live_play_obj:
+            return '未知'
+        live_shift_schedule_obj = live_play_obj.classs
+        if not live_shift_schedule_obj:
+            return '未知'
+        start_time = live_shift_schedule_obj.start_time
+        end_time = live_shift_schedule_obj.end_time
+        if not start_time or not end_time:
+            return '未知'
+        return f"{start_time.strftime('%Y-%m-%d %H:%M')} - {end_time.strftime('%Y-%m-%d %H:%M')}"
+
+    def get_is_print(self, obj):
+        printstatus = obj.printstatus
+        if printstatus:
+            return '已打印'
+        else:
+            return '未打印'
+
+    def get_flow_newest_updater(self, obj):
+        order_flow_obj = self.get_newest_order_flow_obj(obj)
+        if not order_flow_obj:
+            return '无'
+        owner = order_flow_obj.owner
+        if not owner:
+            return '无'
+        return owner.first_name
+
+    def get_is_presale_order(self, obj):
+        if obj.is_presale:
+            return '预售'
+        else:
+            return '非预售'
+
+    def get_system_status(self, obj):
+        system_status = obj.status
+        if not system_status:
+            return '未知'
+        map_dict = {
+            '0': '已删除',
+            '1': '待核对',
+            '2': '已核对',
+            '3': '核对有误',
+            '4': '人工已核对',
+            '5': '系统已核对',
+            '6': '财务已核对',
+        }
+        return map_dict.get(system_status, '未知')
+
+    def get_refund_status(self, obj):
+        auto_status = obj.autostatus
+        if auto_status == '2':
+            return '已退款'
+        elif auto_status == '11':
+            return '部分退款'
+        else:
+            return '未退款'
+
+    def get_check_good_category(self, obj):
+        check_good_type_dict_obj = obj.checkgoodstype
+        if not check_good_type_dict_obj:
+            return '未知'
+        if check_good_type_dict_obj.parent.id != 32:
+            return '未知'
+        return check_good_type_dict_obj.label or '无'
+
+    def get_trade_screenshot(self, obj):
+        taobao_qs = self.get_taobao_order_qs(obj)
+        if not taobao_qs:
+            return '无'
+        img_url = None
+        for taobao_obj in taobao_qs:
+            if taobao_obj.img_list:
+                img_url = taobao_obj.img_list
+                break
+        if not img_url:
+            return '无'
+        return img_url
+
+    def get_is_add_account(self, obj):
+        live_play_obj = obj.play
+        if not live_play_obj:
+            return '未知'
+        if live_play_obj.is_add >=1:
+            return '正常'
+        else:
+            return '加账'
+
+    def get_category_level_1(self, obj):
+        category_obj = obj.category
+        if not category_obj:
+            return '未知'
+        if category_obj.level == 1:
+            return category_obj.name
+        else:
+            name = None
+            category_family = category_obj.get_my_family()
+            if not category_family:
+                return '未知'
+            for item in category_family:
+                if item.level == 1:
+                    name = item.name
+                    break
+            return name
+
+    def get_category_level_2(self, obj):
+        category_obj = obj.category
+        if not category_obj:
+            return '未知'
+        if category_obj.level == 2:
+            return category_obj.name
+        else:
+            name = None
+            category_family = category_obj.get_my_family()
+            if not category_family:
+                return '未知'
+            for item in category_family:
+                if item.level == 2:
+                    name = item.name
+                    break
+            return name
+
+    def get_category_level_3(self, obj):
+        category_obj = obj.category
+        if not category_obj:
+            return '未知'
+        if category_obj.level == 3:
+            return category_obj.name
+        else:
+            name = None
+            category_family = category_obj.get_my_family()
+            if not category_family:
+                return '未知'
+            for item in category_family:
+                if item.level == 3:
+                    name = item.name
+                    break
+            return name
+
+    def get_category_level_4(self, obj):
+        category_obj = obj.category
+        if not category_obj:
+            return '未知'
+        if category_obj.level == 4:
+            return category_obj.name
+        else:
+            name = None
+            category_family = category_obj.get_my_family()
+            if not category_family:
+                return '未知'
+            for item in category_family:
+                if item.level == 4:
+                    name = item.name
+                    break
+            return name
 
     def get_kickback(self, obj):
         """
@@ -173,10 +440,10 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
             kickback = float(kickback)
         except Exception as e:
             return '无'
-        # 计算应付商家， 金额 * （1 - 扣点）   amount * (1 - kickback)
+        # 计算应付商家， 金额 * （1 - 扣点）   amount * (1 - kickback) 保留两位小数
         if not obj.amount:
             return '无'
-        return float(obj.amount) * (1 - kickback)
+        return round(float(obj.amount) * (1 - kickback), 2)
 
     def get_taobao_tbno(self, obj):
         """
@@ -226,6 +493,16 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
             taobao_id_list.append(tao_bao_order_obj.id)
         return OrderTaobaoorder.objects.filter(id__in=taobao_id_list)
 
+    @staticmethod
+    def get_newest_order_flow_obj(obj):
+        newest_order_flow_obj_id = obj.orderflow_id
+        if not newest_order_flow_obj_id:
+            return OrderFlow.objects.none()
+        order_flow_obj = OrderFlow.objects.filter(id=newest_order_flow_obj_id).first()
+        if not order_flow_obj:
+            return OrderFlow.objects.none()
+        return order_flow_obj
+
     def get_taobao_order_pay_time(self, obj):
         """
         获取订单付款时间
@@ -245,16 +522,12 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
         @return:
         """
         blank_fields = [
-            '客户昵称', '成本金额', '成本导入时间', '代购费', '证书费', '绳子费', '盒子费', '其它', '多付金额', '附加扣款', '附加补款',
-            '货主证书', '利润', '扣点调否', '调扣ID', '差异扣点', '售后金额', '备注', '录单员', '系统状态', '退款金额', '退款状态', '自动状态',
-            '流程最近更新者', '订单更新时间', '订单创建时间', '支付方式', '交易截图', '标题货品码', '是否打印', '是否加帐',
-            '证书', '发货记录', '货主备注', '场次ID', '班次时间', '拉新专员', '图片地址',
-            '扫码状态', '扫码历史', '品检状态', '品检类型', '品检备注', '品检人', '品检时间', '预售订单',
-            '待结ID', '结扣ID', '结算ID'
+            '拉新专员', '杂项支出', '销售专员', '转粉专员', '关联店铺', '支付方式', '货主证书', '利润', '扣点调否', '差异扣点', '售后金额',
+            '待结ID', '结扣ID', '结算ID', '成本导入时间', '录单员', '标题货品码', '客户昵称',
         ]
         ret = super(ReserveDownloadOrderSerializer, self).to_representation(instance)
         for field in blank_fields:
-            ret[field] = ''
+            ret[field] = '暂无'
         return ret
 
     def get_scan_code_time(self, obj):
@@ -262,11 +535,11 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
         扫码时间
         """
         # order_flow_obj = OrderFlow.objects.filter(order=obj).order_by('-created_time').first()
-        newest_order_flow_obj_id = obj.orderflow_id
-        if not newest_order_flow_obj_id:
-            return '无'
+        # newest_order_flow_obj_id = obj.orderflow_id
+        # if not newest_order_flow_obj_id:
+        #     return '无'
 
-        order_flow_obj = OrderFlow.objects.filter(id=newest_order_flow_obj_id).first()
+        order_flow_obj = self.get_newest_order_flow_obj(obj)
         if not order_flow_obj:
             return '无'
         return order_flow_obj.created_time.strftime('%Y-%m-%d %H:%M:%S')
@@ -278,7 +551,22 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
         return order_flow_obj.owner.first_name
 
     def get_ban_ci(self, obj):
-        return '无'
+        live_play_obj = obj.play
+        if not live_play_obj:
+            return '未知'
+        live_shift_schedule_obj = live_play_obj.classs
+        if not live_shift_schedule_obj:
+            return '未知'
+        map_dict = {
+            1: '早班',
+            2: '中班',
+            3: '晚班',
+            4: '夜班',
+        }
+        class_tag = live_shift_schedule_obj.classtag
+        if class_tag not in map_dict:
+            return '未知'
+        return map_dict.get(class_tag, '未知')
 
     def get_total_paid(self, obj):
         """
@@ -302,7 +590,14 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
             'item_status_name', 'taobao_tbno', 'yhq', 'itemcode', 'chang_zhang_name', 'zhibo_type_text',
             'title', 'taobao_order_pay_time', 'link_type', 'scan_code_time', 'ban_ci', 'ban_ci_zhang',
             'shi_chang_ren_yuan', 'zhu_li_2', 'zhu_li_3', 'zhu_li_4', 'chang_kong_1', 'chang_kong_2', 'chang_kong_3',
-            'chang_kong_4', 'ke_fu_1', 'ke_fu_2', 'ke_fu_3', 'ke_fu_4', 'chang_zhang2_name', 'code_scaner', 'total_paid'
+            'chang_kong_4', 'ke_fu_1', 'ke_fu_2', 'ke_fu_3', 'ke_fu_4', 'chang_zhang2_name', 'code_scaner', 'total_paid',
+            'scan_code_history', 'check_good_status', 'dai_gou_fee', 'zheng_shu_fee', 'sheng_zi_fee', 'he_zi_fee',
+            'other_fee', 'duo_fu_jin_e', 'goods_image_url', 'desc', 'auto_status_text', 'order_create_time', 'zheng_shu',
+            'fa_huo_ji_lu', 'shipper_memo', 'chang_ci_id', 'ban_ci_time', 'is_print', 'flow_newest_updater',
+            'is_presale_order', 'system_status', 'refund_status', 'check_good_category', 'checkgoods_desc',
+            'checkgoods_checker', 'checkgoods_time', 'trade_screenshot', 'cost_amount', 'additional_deduction',
+            'additional_payment', 'deduction_id', 'refund_amount', 'order_update_time', 'is_add_account',
+            'category_level_1', 'category_level_2', 'category_level_3', 'category_level_4', 'delivery_time_dead_line'
         ]
 
 
