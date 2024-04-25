@@ -7,6 +7,7 @@ from datetime import datetime, time
 from decimal import Decimal
 
 from commodity_category.models import ShopCategory
+from dict_dictionary.models import DictDetail
 from live_play.models import OrderPlay
 from order.order_status_enum import OrderFlowStatus, OrderCheckedStatus
 from shipper.models import ShopShipper
@@ -93,7 +94,7 @@ class OrderOrder(models.Model):
     erxian = models.FloatField('耳线费', default=0)
     box = models.FloatField('盒子费', default=0)
     overage = models.FloatField('多付金额', default=0)
-    refund_fee = models.FloatField('退货费用', default=0)
+    refund_fee = models.FloatField('退款金额', default=0)
 
     flat = models.IntegerField('同步标记', blank=True, null=True, default=0)
     is_check = models.IntegerField('联络审核状态', blank=True, null=True, default=0)  # 默认0
@@ -110,7 +111,7 @@ class OrderOrder(models.Model):
     category = models.ForeignKey(ShopCategory, models.DO_NOTHING, blank=True, null=True, verbose_name='商品类目')
     # item_status = models.OneToOneField(ShopItemstatus, models.DO_NOTHING, blank=True, null=True,
     #                                    verbose_name='流程状态')
-    zhuli = models.ForeignKey(AccountMyuser, models.DO_NOTHING, verbose_name='助理')  # 暂不关联
+    zhuli = models.ForeignKey(AccountMyuser, models.DO_NOTHING, verbose_name='助理', related_name='zhuli_orders')  # 暂不关联
     shop_id = models.IntegerField('所属商户', blank=True, null=True, default=2)  # 暂不关联
     play = models.ForeignKey(OrderPlay, models.DO_NOTHING, blank=True, null=True)
     # 支付凭证many2many关联
@@ -124,6 +125,7 @@ class OrderOrder(models.Model):
     item_status = models.ForeignKey(ItemStatus, related_name='orders_item_status', verbose_name=u'流程状态', null=True, blank=True,
                                     help_text=u'通过订单流程来设置',
                                     on_delete=models.SET_NULL)
+    # 这个 status 的 Choice 字典， 是 OrderCheckedStatus 的枚举值
     status = models.CharField('是否删除 0 为没删', max_length=2, blank=True, null=True)
     taobao_order_count = models.IntegerField('平台订单数量，有多少个平台订单属于此大G订单 理应最少为 1', blank=True, null=True)
 
@@ -137,6 +139,21 @@ class OrderOrder(models.Model):
     balancetype = models.PositiveSmallIntegerField(u'结算类型', default=0)  # 1：扣点结算 2：成本价结算
     is_bindgoods = models.BooleanField(u'需要绑定货品', default=False)
     is_reorder = models.IntegerField(u'是否为重录订单', blank=True, null=True, default=0)  # 重录订单=1
+    # 2024-04-25 补充字段
+    desc_shz_gj = models.CharField('收货组跟进', max_length=1000, blank=True, null=True)
+    orderflow_id = models.IntegerField('最新的一条orderflow_id', blank=True, null=True)
+    checkgoodstype = models.ForeignKey(DictDetail, models.DO_NOTHING, blank=True, null=True, verbose_name='品检类型/品检状态相关',
+                                       db_column='checkgoodstype_id')
+    checkgoods_desc = models.CharField('品检备注', max_length=255, blank=True, null=True)
+    checkgoods_creator = models.ForeignKey(AccountMyuser, models.DO_NOTHING, blank=True, null=True, verbose_name='品检人员',
+                                           db_column='checkgoods_creator_id', related_name='checkgoods_orders')
+    checkgoods_created_time = models.DateTimeField('品检时间', blank=True, null=True)
+    costamount = models.FloatField('成本金额', blank=True, null=True)
+    addlamount1 = models.FloatField('附加扣款', blank=True, null=True)
+    addlamount2 = models.FloatField('附加补款', blank=True, null=True)
+    activitykick_id = models.IntegerField('调扣ID', blank=True, null=True)
+    # refund_fee = models.FloatField('退款费用', blank=True, null=True)
+    latestdeliverytime = models.DateTimeField('最晚发货时间', blank=True, null=True)
 
     class Meta:
         managed = False
@@ -234,7 +251,7 @@ class OrderOrder(models.Model):
 class QiDeBaoOrderInfo(models.Model):
     shop_id = models.IntegerField(blank=True, null=True, default=2)
     prefix = models.ForeignKey(ShopSerialprefix, models.DO_NOTHING, blank=True, null=True, verbose_name='店铺')
-    order = models.ForeignKey(OrderOrder, models.DO_NOTHING, blank=True, null=True, verbose_name='系统订单')
+    order = models.ForeignKey(OrderOrder, models.DO_NOTHING, blank=True, null=True, verbose_name='系统订单', related_name='qdb_orders')
     tradeno = models.CharField(max_length=255, blank=True, null=True, verbose_name='交易单号')
     seller_message = models.CharField(db_column='sellerMessage', max_length=5000, blank=True, null=True, verbose_name='备注？')
     platform_goods_name = models.CharField(max_length=255, blank=True, null=True, db_column='platformgoodsname', verbose_name='平台商品名称')
