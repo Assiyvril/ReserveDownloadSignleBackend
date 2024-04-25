@@ -18,13 +18,13 @@ django-imagekit = "*"
 django-filter = "==2.4.0"
 openpyxl = "==3.0.5"
 numpy = "==1.22.4"
-celery = "==5.3.6"
 redis = "==5.0.1"
 eventlet = "==0.35.0"
 django-celery-beat = "==2.5.0"
 django-celery-results = "==2.4.0"
 lxml = "5.1.0"
 gevent = "*"
+celery = "==5.4.0"
 
 [dev-packages]
 
