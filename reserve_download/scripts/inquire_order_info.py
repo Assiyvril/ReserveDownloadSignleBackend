@@ -1178,6 +1178,17 @@ class OrderInquireByCode:
         self.gen_excel()
 
 
+class TestInquire:
+
+    def __init__(self, num):
+        self.num = num
+        self.queryset = None
+        self.data_count = 0
+        print('TestInquire 实例化', self.num)
+
+    def exec(self):
+        print('exec 方法执行', self.num)
+
 if __name__ == '__main__':
     query = {
         "date_type": "order_date",

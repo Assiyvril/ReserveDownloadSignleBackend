@@ -1,9 +1,12 @@
 from __future__ import absolute_import, unicode_literals
+
+import time
+
 from scripts_public import _setup_django
 import datetime
 from celery_task.celery_main import celery_app
 from reserve_download.models import ReserveDownload
-from reserve_download.scripts.inquire_order_info import ReserveDownloadOrderInquirer, OrderInquireByCode
+from reserve_download.scripts.inquire_order_info import ReserveDownloadOrderInquirer, OrderInquireByCode, TestInquire
 
 """
 预约下载
@@ -72,3 +75,21 @@ def scheduled_download_by_upload_excel(parse_excel_data, available_fendian_id_li
     ).update(
         task_exec_end_time=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
     )
+
+
+@celery_app.task(name='celery_test_baga', soft_time_limit=SOFT_TIME_LIMIT, max_retries=MAX_RETRY_COUNT)
+def test_celery(num):
+    """
+    测试celery
+    :param num:
+    :return:
+    """
+    print(num, '号celery 开始执行, 20秒后结束')
+    obj = ReserveDownload.objects.filter(
+        created_time__date=datetime.datetime.now().strftime('%Y-%m-%d'),
+    ).first()
+    print('调用 orm 测试 ID', obj.id)
+    TestInquire(num).exec()
+    # print('调用类方法测试', ti.exec())
+    print(num, '号celery 执行结束')
+
