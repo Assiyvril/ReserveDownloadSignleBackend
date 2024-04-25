@@ -118,6 +118,10 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
     code_scaner = serializers.SerializerMethodField(read_only=True, help_text='扫码人', label='扫码人')
 
     total_paid = serializers.SerializerMethodField(read_only=True, help_text='实付金额，所有平台订单的 p_amount 之和', label='实付金额')
+    # 24-04-25 新增
+    """ 扫码历史, 品检状态, 代购费, 证书费, 绳子费, 盒子费, 其它, 多付金额, 图片地址, 备注, 自动状态, 订单创建时间, 证书, 发货记录, 货主备注, 场次ID, 班次时间, 是否打印,
+        流程最近更新者, 预售订单, 系统状态, 退款状态"""
+    # scan_code_history = pass
 
     def get_kickback(self, obj):
         """
@@ -258,7 +262,11 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
         扫码时间
         """
         # order_flow_obj = OrderFlow.objects.filter(order=obj).order_by('-created_time').first()
-        order_flow_obj = obj.scan_code_flows.all().order_by('-created_time').first()
+        newest_order_flow_obj_id = obj.orderflow_id
+        if not newest_order_flow_obj_id:
+            return '无'
+
+        order_flow_obj = OrderFlow.objects.filter(id=newest_order_flow_obj_id).first()
         if not order_flow_obj:
             return '无'
         return order_flow_obj.created_time.strftime('%Y-%m-%d %H:%M:%S')
