@@ -87,3 +87,17 @@ class ShopCategory(models.Model):
             else:
                 # 没有对应的父节点
                 return target
+
+    def get_my_family(self):
+        """
+        获取当前节点的家族
+        """
+        family = []
+        node = self
+        while node is not None:
+            # 将当前节点添加到父级列表
+            family.append(node)
+            # 移动到下一个父级
+            node = node.parent
+        # 返回父级列表
+        return family[::-1]
