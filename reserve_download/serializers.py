@@ -178,9 +178,14 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
 
     def get_scan_code_history(self, obj):
         order_flow_obj = self.get_newest_order_flow_obj(obj)
-        if not order_flow_obj:
+        try:
+            if not order_flow_obj:
+                return '无'
+            if not order_flow_obj.old_status:
+                return '无'
+            return order_flow_obj.old_status.name
+        except Exception as e:
             return '无'
-        return order_flow_obj.old_status.name
 
     def get_scan_code_status(self, obj):
         order_flow_obj = self.get_newest_order_flow_obj(obj)
@@ -703,7 +708,7 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
     """ 扫码历史, 品检状态, 代购费, 证书费, 绳子费, 盒子费, 其它费用, 多付金额, 图片地址, 备注, 自动状态, 订单创建时间, 证书, 发货记录, 货主备注, 场次ID, 班次时间, 是否打印,
         流程最近更新者, 预售订单, 系统状态, 退款状态, 品检类型, 品检备注, 品检人, 品检时间, 交易截图,  成本金额, 附加扣款, 附加补款, 调扣ID, 退款金额, 订单更新时间, 是否加帐
         分类一级、分类二级、分类三级、分类四级、最晚发货时间"""
-    scan_code_history = serializers.CharField(source='old_status.name', read_only=True, help_text='扫码历史, 上一条状态 ', label='扫码历史')
+    scan_code_history = serializers.CharField(source='old_status.name', read_only=True, help_text='扫码历史, 上一条状态 ', label='扫码历史', default='无')
     scan_code_status = serializers.CharField(source='status.name', read_only=True, help_text='扫码状态, 当前的状态名 ', label='扫码状态')
     check_good_status = serializers.CharField(source='order.get_is_checkgoods_display', read_only=True, help_text='品检状态', label='品检状态', default='')
     dai_gou_fee = serializers.FloatField(source='order.fee', read_only=True, help_text='代购费', label='代购费', default=0)
