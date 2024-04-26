@@ -6,7 +6,9 @@ from scripts_public import _setup_django
 import datetime
 from celery_task.celery_main import celery_app
 from reserve_download.models import ReserveDownload
-from reserve_download.scripts.inquire_order_info import ReserveDownloadOrderInquirer, OrderInquireByCode, TestInquire
+from order.models import OrderFlow, OrderOrder
+from reserve_download.serializers import ReserveDownloadOrderSerializer, ReserveDownloadOrderFlowSerializer
+from reserve_download.scripts.inquire_order_info import ReserveDownloadOrderInquirer, OrderInquireByCode
 
 """
 预约下载
@@ -77,19 +79,42 @@ def scheduled_download_by_upload_excel(parse_excel_data, available_fendian_id_li
     )
 
 
-@celery_app.task(name='celery_test_baga', soft_time_limit=SOFT_TIME_LIMIT, max_retries=MAX_RETRY_COUNT)
+@celery_app.task(name='celery_test_baga', time_limit=SOFT_TIME_LIMIT, max_retries=MAX_RETRY_COUNT)
 def test_celery(num):
     """
     测试celery
     :param num:
     :return:
     """
-    print(num, '号celery 开始执行, 20秒后结束')
-    obj = ReserveDownload.objects.filter(
-        created_time__date=datetime.datetime.now().strftime('%Y-%m-%d'),
-    ).first()
-    print('调用 orm 测试 ID', obj.id)
-    TestInquire(num).exec()
-    # print('调用类方法测试', ti.exec())
-    print(num, '号celery 执行结束')
+    print(f'{num}号celery 开始执行')
+    order_qs = OrderOrder.objects.filter(
+        created_time__date__gte='2024-04-01',
+        created_time__date__lte='2024-04-02',
+    )[0:100].prefetch_related(
+        'prefix',
+        'category', 'shipper',
+        'zhubo', 'zhuli',
+        'item_status',
+        'play', 'play__changzhang', 'play__banzhang', 'play__shichangzhuanyuan', 'play__zhuli2',
+        'play__zhuli3', 'play__zhuli4', 'play__changkong', 'play__changkong1',
+        'play__changkong2', 'play__changkong3', 'play__kefu1', 'play__kefu2',
+        'play__kefu3', 'play__kefu4', 'play__creator', 'play__classs',
+        'rel_to_taobao_order', 'rel_to_taobao_order__taobaoorder',
+        'scan_code_flows', 'qdb_orders', 'checkgoodstype',
+    )
+    flow_qs = OrderFlow.objects.filter(
+        order__in=order_qs,
+    ).prefetch_related(
+        'order', 'order__prefix', 'order__category', 'order__shipper', 'order__zhubo', 'order__zhuli',
+        'order__item_status', 'order__play', 'order__play__changzhang', 'order__play__banzhang',
+        'order__play__shichangzhuanyuan', 'order__play__zhuli2', 'order__play__zhuli3', 'order__play__zhuli4',
+        'order__play__changkong', 'order__play__changkong1', 'order__play__changkong2', 'order__play__changkong3',
+        'order__play__kefu1', 'order__play__kefu2', 'order__play__kefu3', 'order__play__kefu4', 'order__play__classs',
+        'order__rel_to_taobao_order', 'order__rel_to_taobao_order__taobaoorder',
+        'order__scan_code_flows', 'owner', 'status', 'order__qdb_orders', 'order__checkgoodstype',
+    )
+    od = ReserveDownloadOrderSerializer(order_qs, many=True).data
+    fd = ReserveDownloadOrderFlowSerializer(flow_qs, many=True).data
+
+    print(f'{num}号celery 执行结束 order Data Count{len(od)}, flow Data Count{len(fd)}')
 
