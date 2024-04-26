@@ -673,3 +673,71 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         LargeDataExport(data_list=rep_data['order_data'], file_name=order_data_file_name).save()
         LargeDataExport(data_list=rep_data['flow_data'], file_name=flow_data_file_name).save()
         return Response(rep_data)
+
+    @action(methods=['post'], detail=False)
+    def inquire_celery_task_queue_status(self, request):
+        rep_data = {
+            'msg': '',
+            'result': False,                # 查询是否成功
+            'executing_task_count': 0,      # 正在执行的任务数量
+            'node_count': 0,                # 节点数量
+            'queuing_task_count': 0,        # 排队中的任务数量
+            'executing_task_list': [],      # 正在执行的任务列表
+            'queuing_task_list': [],        # 排队中的任务列表
+            'worker_status': {
+                'max_concurrency': 0,       # 最大线程数
+                'running_threads': 0,       # 正在执行的线程数
+                'free_threads': 0,          # 空闲线程数
+                'usage_rate': '0%',        # 使用率
+            },            # worker 状态
+        }
+        from celery_task.reserve_download.task import celery_app
+        # 当前运行的任务
+        active_task = celery_app.control.inspect().active()
+        # 接收到的任务
+        received_task = celery_app.control.inspect().reserved()
+        # worker 状态
+        worker_status = celery_app.control.inspect().stats()
+
+        # rep_data['origin_active_task'] = active_task
+        # rep_data['origin_received_task'] = received_task
+
+        if not worker_status:
+            rep_data['msg'] = 'worker 状态查询失败！'
+            return Response(rep_data)
+        if not active_task:
+            rep_data['msg'] = 'active_task 查询失败！'
+            return Response(rep_data)
+        if not received_task:
+            rep_data['msg'] = 'received_task 查询失败！'
+            return Response(rep_data)
+
+        # worker 状态
+        for key in worker_status.keys():
+            rep_data['worker_status']['max_concurrency'] += worker_status[key]['pool']['max-concurrency']
+            rep_data['worker_status']['running_threads'] += worker_status[key]['pool']['running-threads']
+            rep_data['worker_status']['free_threads'] += worker_status[key]['pool']['free-threads']
+        rep_data['worker_status']['usage_rate'] = f'{(rep_data["worker_status"]["running_threads"] / rep_data["worker_status"]["max_concurrency"]) * 100}%'
+
+        # 正在执行的任务
+        for key in active_task.keys():
+            rep_data['executing_task_count'] += len(active_task[key])
+            for executing_task in active_task[key]:
+                task_id = executing_task.get('id', None)
+                start_timestamp = executing_task.get('time_start', None)
+                start_time_str = datetime.datetime.fromtimestamp(start_timestamp).strftime('%Y-%m-%d %H:%M:%S')
+                rep_data['executing_task_list'].append({
+                    'task_id': task_id,
+                    'start_time': start_time_str,
+                })
+
+        # 排队中的任务
+        for key in received_task.keys():
+            rep_data['queuing_task_count'] += len(received_task[key])
+            for queuing_task in received_task[key]:
+                task_id = queuing_task.get('id', None)
+                rep_data['queuing_task_list'].append({
+                    'task_id': task_id,
+                })
+
+        return Response(rep_data)
