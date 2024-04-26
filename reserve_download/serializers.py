@@ -136,14 +136,14 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
     auto_status_text = serializers.SerializerMethodField(read_only=True, help_text='自动状态', label='自动状态')
     order_create_time = serializers.DateTimeField(source='created_time', read_only=True, help_text='订单创建时间', label='订单创建时间', format='%Y-%m-%d %H:%M:%S')
     zheng_shu = serializers.SerializerMethodField(read_only=True, help_text='证书', label='证书')
-    fa_huo_ji_lu = serializers.SerializerMethodField(read_only=True, help_text='证书', label='证书')
+    fa_huo_ji_lu = serializers.SerializerMethodField(read_only=True, help_text='发货记录', label='发货记录')
     shipper_memo = serializers.CharField(read_only=True, help_text='货主备注', label='货主备注', default='')
     chang_ci_id = serializers.IntegerField(source='play_id', read_only=True, help_text='场次ID', label='场次ID', default='')
     ban_ci_time = serializers.SerializerMethodField(read_only=True, help_text='班次时间', label='班次时间')
     is_print = serializers.SerializerMethodField(read_only=True, help_text='是否打印', label='是否打印')
     flow_newest_updater = serializers.SerializerMethodField(read_only=True, help_text='流程最近更新者', label='流程最近更新者')
     is_presale_order = serializers.SerializerMethodField(read_only=True, help_text='预售订单', label='预售订单')
-    system_status = serializers.SerializerMethodField(read_only=True, help_text='预售订单', label='预售订单')
+    system_status = serializers.SerializerMethodField(read_only=True, help_text='系统状态', label='系统状态')
     refund_status = serializers.SerializerMethodField(read_only=True, help_text='退款状态', label='退款状态')
     check_good_category = serializers.SerializerMethodField(read_only=True, help_text='品检类型', label='品检类型')
     checkgoods_desc = serializers.CharField(read_only=True, help_text='品检备注', label='品检备注', default='')
@@ -604,7 +604,8 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
             'is_presale_order', 'system_status', 'refund_status', 'check_good_category', 'checkgoods_desc',
             'checkgoods_checker', 'checkgoods_time', 'trade_screenshot', 'cost_amount', 'additional_deduction',
             'additional_payment', 'deduction_id', 'refund_amount', 'order_update_time', 'is_add_account',
-            'category_level_1', 'category_level_2', 'category_level_3', 'category_level_4', 'delivery_time_dead_line'
+            'category_level_1', 'category_level_2', 'category_level_3', 'category_level_4', 'delivery_time_dead_line',
+            'desc_shz_gj'
         ]
 
 
@@ -724,7 +725,7 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
     is_print = serializers.SerializerMethodField(read_only=True, help_text='是否打印', label='是否打印')
     flow_newest_updater = serializers.CharField(read_only=True, source='owner.first_name', help_text='流程最近更新者', label='流程最近更新者')
     is_presale_order = serializers.SerializerMethodField(read_only=True, help_text='预售订单', label='预售订单')
-    system_status = serializers.SerializerMethodField(read_only=True, help_text='预售订单', label='预售订单')
+    system_status = serializers.SerializerMethodField(read_only=True, help_text='系统状态', label='系统状态')
     refund_status = serializers.SerializerMethodField(read_only=True, help_text='退款状态', label='退款状态')
     check_good_category = serializers.SerializerMethodField(read_only=True, help_text='品检类型', label='品检类型')
     checkgoods_desc = serializers.CharField(read_only=True, help_text='品检备注', label='品检备注', default='')
@@ -746,6 +747,7 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
     category_level_4 = serializers.SerializerMethodField(read_only=True, help_text='分类四级', label='分类四级')
     delivery_time_dead_line = serializers.DateTimeField(source='order.latestdeliverytime', read_only=True, help_text='最晚发货时间', label='最晚发货时间',
                                                         default=None, format='%Y-%m-%d %H:%M:%S')
+    desc_shz_gj = serializers.CharField(source='order.desc_shz_gj', read_only=True, help_text='收货组跟进', label='收货组跟进', default='')
 
     def get_goods_image_url(self, obj):
         qi_de_bao_order_obj = QiDeBaoOrderInfo.objects.filter(order=obj.order).first()
@@ -1132,7 +1134,8 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
             'is_presale_order', 'system_status', 'refund_status', 'check_good_category', 'checkgoods_desc',
             'checkgoods_checker', 'checkgoods_time', 'trade_screenshot', 'cost_amount', 'additional_deduction',
             'additional_payment', 'deduction_id', 'refund_amount', 'order_update_time', 'is_add_account',
-            'category_level_1', 'category_level_2', 'category_level_3', 'category_level_4', 'delivery_time_dead_line'
+            'category_level_1', 'category_level_2', 'category_level_3', 'category_level_4', 'delivery_time_dead_line',
+            'desc_shz_gj'
         ]
 
 
