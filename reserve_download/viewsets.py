@@ -9,12 +9,13 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from commodity_category.models import ShopCategory
-from order.models import ItemStatus
+from order.models import ItemStatus, OrderOrder, OrderFlow
 from reserve_download.models import ReserveDownload
 from reserve_download.scripts.inquire_order_info import ReserveDownloadOrderInquirer
 from reserve_download.scripts.read_upload_excel import Read_RED_Upload_Excel
 from reserve_download.serializers import ReserveDownloadRecordSerializer, OrderScanCodeStatusChoiceListSerializer, FenDianChoiceListSerializer, \
-    ZhuboChoiceListSerializer, ShopShipperChoiceListSerializer, UserFirstNameChoiceListSerializer
+    ZhuboChoiceListSerializer, ShopShipperChoiceListSerializer, UserFirstNameChoiceListSerializer, ReserveDownloadOrderSerializer, \
+    ReserveDownloadOrderFlowSerializer
 from shipper.models import ShopShipper
 from shop.models import ShopSerialprefix
 from user.models import AccountMyuser
@@ -618,4 +619,57 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         print('创建成功 task_id:', task.id)
         rep_data['result'] = True
         rep_data['task_id'] = task.id
+        return Response(rep_data)
+
+    @action(methods=['get'], detail=False)
+    def test_serializer(self, request):
+        rep_data = {
+            'msg': '',
+            'result': False,
+            'use_time': '',
+            'order_data': [],
+            'flow_data': [],
+        }
+        start_exec_time = datetime.datetime.now()
+        print('开始查询', start_exec_time)
+        order_qs = OrderOrder.objects.filter(
+            created_time__date__gte='2024-04-01',
+            created_time__date__lte='2024-04-02',
+        )[0:10].prefetch_related(
+                'prefix',
+                'category', 'shipper',
+                'zhubo', 'zhuli',
+                'item_status',
+                'play', 'play__changzhang', 'play__banzhang', 'play__shichangzhuanyuan', 'play__zhuli2',
+                'play__zhuli3', 'play__zhuli4', 'play__changkong', 'play__changkong1',
+                'play__changkong2', 'play__changkong3', 'play__kefu1', 'play__kefu2',
+                'play__kefu3', 'play__kefu4', 'play__creator', 'play__classs',
+                'rel_to_taobao_order', 'rel_to_taobao_order__taobaoorder',
+                'scan_code_flows', 'qdb_orders', 'checkgoodstype',
+            )
+        flow_qs = OrderFlow.objects.filter(
+            order__in=order_qs,
+        ).prefetch_related(
+                'order', 'order__prefix', 'order__category', 'order__shipper', 'order__zhubo', 'order__zhuli',
+                'order__item_status', 'order__play', 'order__play__changzhang', 'order__play__banzhang',
+                'order__play__shichangzhuanyuan', 'order__play__zhuli2', 'order__play__zhuli3', 'order__play__zhuli4',
+                'order__play__changkong', 'order__play__changkong1', 'order__play__changkong2', 'order__play__changkong3',
+                'order__play__kefu1', 'order__play__kefu2', 'order__play__kefu3', 'order__play__kefu4', 'order__play__classs',
+                'order__rel_to_taobao_order', 'order__rel_to_taobao_order__taobaoorder',
+                'order__scan_code_flows', 'owner', 'status', 'order__qdb_orders', 'order__checkgoodstype',
+            )
+        print('订单数量:', order_qs.count(), '流程数量:', flow_qs.count())
+        rep_data['result'] = True
+        rep_data['order_data'] = ReserveDownloadOrderSerializer(order_qs, many=True).data
+        rep_data['flow_data'] = ReserveDownloadOrderFlowSerializer(flow_qs, many=True).data
+        end_exec_time = datetime.datetime.now()
+        print('查询结束', end_exec_time)
+        print('耗时:', end_exec_time - start_exec_time)
+        rep_data['use_time'] = str(end_exec_time - start_exec_time)
+        # 测试生成 excel
+        from reserve_download.scripts.gen_excel import LargeDataExport
+        order_data_file_name = 'test_order_data_0426.xlsx'
+        flow_data_file_name = 'test_flow_data_0426.xlsx'
+        LargeDataExport(data_list=rep_data['order_data'], file_name=order_data_file_name).save()
+        LargeDataExport(data_list=rep_data['flow_data'], file_name=flow_data_file_name).save()
         return Response(rep_data)
