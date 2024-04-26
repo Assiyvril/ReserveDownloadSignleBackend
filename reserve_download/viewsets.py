@@ -688,7 +688,8 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
                 'max_concurrency': 0,       # 最大线程数
                 'running_threads': 0,       # 正在执行的线程数
                 'free_threads': 0,          # 空闲线程数
-                'usage_rate': '0%',        # 使用率
+                'usage_rate': '0%',         # 使用率
+                'usage_rate_number': 0,     # 使用率数字格式
             },            # worker 状态
         }
         from celery_task.reserve_download.task import celery_app
@@ -714,10 +715,12 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
 
         # worker 状态
         for key in worker_status.keys():
+            rep_data['node_count'] += 1
             rep_data['worker_status']['max_concurrency'] += worker_status[key]['pool']['max-concurrency']
             rep_data['worker_status']['running_threads'] += worker_status[key]['pool']['running-threads']
             rep_data['worker_status']['free_threads'] += worker_status[key]['pool']['free-threads']
         rep_data['worker_status']['usage_rate'] = f'{(rep_data["worker_status"]["running_threads"] / rep_data["worker_status"]["max_concurrency"]) * 100}%'
+        rep_data['worker_status']['usage_rate_number'] = (rep_data["worker_status"]["running_threads"] / rep_data["worker_status"]["max_concurrency"] * 100)
 
         # 正在执行的任务
         for key in active_task.keys():
@@ -739,5 +742,5 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
                 rep_data['queuing_task_list'].append({
                     'task_id': task_id,
                 })
-
+        rep_data['result'] = True
         return Response(rep_data)

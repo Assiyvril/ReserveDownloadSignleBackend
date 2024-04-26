@@ -16,6 +16,8 @@ class ReserveDownloadRecordSerializer(serializers.ModelSerializer):
     task_status_text = serializers.CharField(source='get_task_status_display', read_only=True, help_text='任务状态', label='任务状态')
     file_url = serializers.SerializerMethodField(read_only=True, help_text='文件下载地址', label='文件下载地址')
     fen_dian_name_text = serializers.SerializerMethodField(read_only=True, help_text='店铺名称 text', label='店铺名称 text')
+    filter_condition_text_by_params = serializers.SerializerMethodField(read_only=True, help_text='通过填写表单提交的筛选条件', label='筛选条件')
+    # filter_condition_text_by_excel = serializers.SerializerMethodField(read_only=True, help_text='通过上传excel提交的筛选条件', label='筛选条件')
 
     def get_file_url(self, obj):
         """
@@ -69,10 +71,17 @@ class ReserveDownloadRecordSerializer(serializers.ModelSerializer):
             ret['filter_condition']['scan_code_status_text'] = ''
         return ret
 
+    def get_filter_condition_text_by_params(self, obj):
+        """
+        店铺名称、扫码状态、日期类别、开始日期、结束日期、货品分类、主播名字、货主名字、市场专员名字、扫码人名字、直播班次、平台状态（全退、部分退、未退）、
+        订单情况（十来个）、链接类型、证书情况、品检状态、是否发货
+        """
+        pass    # TODO something
+
     class Meta:
         model = ReserveDownload
         fields = ['id', 'creator_name', 'creator_id', 'created_time', 'filter_condition', 'fendian_info', 'task_status', 'task_exec_start_time',
-                  'task_exec_end_time', 'data_count', 'file_url', 'fen_dian_name_text',
+                  'task_exec_end_time', 'data_count', 'file_url', 'fen_dian_name_text', 'filter_condition_text_by_params',
                   'task_status_text', 'task_celery_id', 'task_result', 'file_name', 'is_success', 'tag', 'can_download']
 
 
