@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from commodity_category.models import ShopCategory
 from order.models import ItemStatus, OrderTaobaoorder, OrderOrder, OrderFlow, QiDeBaoOrderInfo
 from reserve_download.models import ReserveDownload
 from shipper.models import ShopShipper
@@ -16,8 +17,10 @@ class ReserveDownloadRecordSerializer(serializers.ModelSerializer):
     task_status_text = serializers.CharField(source='get_task_status_display', read_only=True, help_text='任务状态', label='任务状态')
     file_url = serializers.SerializerMethodField(read_only=True, help_text='文件下载地址', label='文件下载地址')
     fen_dian_name_text = serializers.SerializerMethodField(read_only=True, help_text='店铺名称 text', label='店铺名称 text')
-    filter_condition_text_by_params = serializers.SerializerMethodField(read_only=True, help_text='通过填写表单提交的筛选条件', label='筛选条件')
-    # filter_condition_text_by_excel = serializers.SerializerMethodField(read_only=True, help_text='通过上传excel提交的筛选条件', label='筛选条件')
+    created_time = serializers.DateTimeField(read_only=True, help_text='记录创建时间', label='创建时间', format='%Y-%m-%d %H:%M:%S')
+    task_exec_start_time = serializers.DateTimeField(read_only=True, help_text='任务开始执行时间', label='任务开始执行时间', format='%Y-%m-%d %H:%M:%S')
+    task_exec_end_time = serializers.DateTimeField(read_only=True, help_text='任务执行结束时间', label='任务执行结束时间', format='%Y-%m-%d %H:%M:%S')
+    is_excel_mode = serializers.SerializerMethodField(read_only=True, help_text='是否Excel模式', label='是否Excel模式')
 
     def get_file_url(self, obj):
         """
@@ -42,46 +45,16 @@ class ReserveDownloadRecordSerializer(serializers.ModelSerializer):
         # 去掉最后的 ', '
         return fendian_name_text[:-2]
 
-    def to_representation(self, instance):
+    def get_is_excel_mode(self, obj):
         """
-        将日期时间格式化为 %Y-%m-%d %H:%M:%S
-        @param instance:
-        @return:
+        是否历史数据
         """
-        ret = super(ReserveDownloadRecordSerializer, self).to_representation(instance)
-        if ret['created_time']:
-            ret['created_time'] = instance.created_time.strftime('%Y-%m-%d %H:%M:%S')
-        if ret['task_exec_start_time']:
-            ret['task_exec_start_time'] = instance.task_exec_start_time.strftime('%Y-%m-%d %H:%M:%S')
-        if ret['task_exec_end_time']:
-            ret['task_exec_end_time'] = instance.task_exec_end_time.strftime('%Y-%m-%d %H:%M:%S')
-        # 扫码状态 text
-        if ret['filter_condition'].get('scan_code_status'):
-            scan_code_status_text = ''
-            for scan_code_status_id in ret['filter_condition']['scan_code_status']:
-                status_obj = ItemStatus.objects.filter(id=scan_code_status_id).first()
-                if not status_obj:
-                    continue
-                if not status_obj.name:
-                    continue
-                scan_code_status_text += status_obj.name + ', '
-            # 去掉最后的 ', '
-            ret['filter_condition']['scan_code_status_text'] = scan_code_status_text[:-2]
-        else:
-            ret['filter_condition']['scan_code_status_text'] = ''
-        return ret
-
-    def get_filter_condition_text_by_params(self, obj):
-        """
-        店铺名称、扫码状态、日期类别、开始日期、结束日期、货品分类、主播名字、货主名字、市场专员名字、扫码人名字、直播班次、平台状态（全退、部分退、未退）、
-        订单情况（十来个）、链接类型、证书情况、品检状态、是否发货
-        """
-        pass    # TODO something
+        return obj.filter_condition.get('is_excel', False)
 
     class Meta:
         model = ReserveDownload
         fields = ['id', 'creator_name', 'creator_id', 'created_time', 'filter_condition', 'fendian_info', 'task_status', 'task_exec_start_time',
-                  'task_exec_end_time', 'data_count', 'file_url', 'fen_dian_name_text', 'filter_condition_text_by_params',
+                  'task_exec_end_time', 'data_count', 'file_url', 'fen_dian_name_text', 'is_excel_mode',
                   'task_status_text', 'task_celery_id', 'task_result', 'file_name', 'is_success', 'tag', 'can_download']
 
 
