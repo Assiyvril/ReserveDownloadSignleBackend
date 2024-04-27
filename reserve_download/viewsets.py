@@ -276,6 +276,8 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
 
         """   构建 filter_condition  """
         ret_data['filter_condition'] = {
+            'is_excel': False,
+            'readable_text': {},    # 用于前端展示, 由celery task 异步构建
             'start_date': start_date,
             'end_date': end_date,
             'date_type': date_type,
@@ -531,6 +533,7 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         record_obj_id = ReserveDownload.objects.create(
             creator=creator_obj,
             filter_condition={
+                'readable_text': {},    # 用于前端展示, 由celery task 异步构建
                 'is_excel': True,
                 'is_history': is_history,
                 'excel_file_mode': file_mode,
