@@ -275,7 +275,7 @@ def batch_update():
     :return:
     """
 
-    record_qs = ReserveDownload.objects.all().order_by('-id')
+    record_qs = ReserveDownload.objects.all().order_by('-id')[0:100]
     for record_obj in record_qs:
         origin_filter_condition = record_obj.filter_condition
         if not origin_filter_condition:
