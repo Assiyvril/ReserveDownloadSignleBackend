@@ -9,10 +9,14 @@ from reserve_download.models import ReserveDownload
 
 
 def refresh_can_download():
-    qs = ReserveDownload.objects.filter(is_success=True)
+    # 上次更新过的，这次排除掉, 从文件中读取上次更新过的 id list
+    with open('refresh_candownload_id_list.json', 'r') as f:
+        last_id_list = json.load(f)
+
+    qs = ReserveDownload.objects.filter(is_success=True).exclude(task_status=9)
     id_list = qs.values_list('id', flat=True)
     # 保险起见， 将本次操作的 id list 保存为 json 文件
-    with open('refresh_candownload_id_list.json', 'w') as f:
+    with open('refresh_candownload_id_2_list.json', 'w') as f:
         json.dump(list(id_list), f)
     print(f'本次操作的 id list 已保存到 refresh_candownload_id_list.json 文件中')
     print(f'共有{qs.count()}条记录需要更新')
