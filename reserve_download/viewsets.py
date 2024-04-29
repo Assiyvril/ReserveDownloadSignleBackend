@@ -402,14 +402,14 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             rep_data['msg'] = '文件必须是xlsx格式'
             return Response(rep_data)
 
-        print('file_name:', file_name, type(file_name))
-        print('creator_id:', creator_id, type(creator_id))
+        # print('file_name:', file_name, type(file_name))
+        # print('creator_id:', creator_id, type(creator_id))
 
         try:
             new_file_name = f'{creator_id}_{int(time.time())}_{random.randint(1000, 9999)}_{file_name}'
-            print('new_file_name:', new_file_name)
+            # print('new_file_name:', new_file_name)
             file_path = os.path.join(settings.MEDIA_ROOT, 'RED_Upload_Excel', new_file_name)
-            print('file_path:', file_path)
+            # print('file_path:', file_path)
             file_dir = os.path.dirname(file_path)
             if not os.path.exists(file_dir):
                 os.makedirs(file_dir)
