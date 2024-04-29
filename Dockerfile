@@ -13,9 +13,9 @@ ENV REDIS_URL=''
 
 COPY . $APP_HOME
 
-RUN /usr/local/bin/python -m pip install --upgrade pip
+RUN /usr/local/bin/python -m pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-RUN pip install -r requirements.txt
+RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 EXPOSE 8000
 
