@@ -21,7 +21,7 @@ from shop.models import ShopSerialprefix
 from user.models import AccountMyuser
 from utils.pagination import CustomV3Pagination
 from utils.renderer import CustomV3Renderer
-from celery_task.reserve_download.task import scheduled_download_by_params, scheduled_download_by_upload_excel, test_celery
+from celery_task.reserve_download.task import scheduled_download_by_params, scheduled_download_by_upload_excel
 
 
 class ReserveDownloadViewSet(viewsets.ModelViewSet):
@@ -605,23 +605,6 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
             else:
                 continue
         rep_data['result'] = True
-        return Response(rep_data)
-
-    @action(methods=['post'], detail=False)
-    def test_celery_task(self, request):
-        rep_data = {
-            'msg': '',
-            'result': False,
-            'task_id': '',
-        }
-        num = request.data.get('num', None)
-        if not num:
-            rep_data['msg'] = 'num不能为空！'
-            return Response(rep_data)
-        task = test_celery.apply_async(args=(num,))
-        print('创建成功 task_id:', task.id)
-        rep_data['result'] = True
-        rep_data['task_id'] = task.id
         return Response(rep_data)
 
     @action(methods=['get'], detail=False)

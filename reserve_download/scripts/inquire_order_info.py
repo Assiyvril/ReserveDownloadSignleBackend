@@ -9,187 +9,7 @@ from reserve_download.serializers import ReserveDownloadOrderSerializer, Reserve
 from order.models import OrderOrder, OrderFlow, OrderTaobaoorder, OrderTaobaoorderOrders, ItemStatus
 from shipper.models import ShopShipper
 from user.models import AccountMyuser
-
-
-class ReserveDownloadOrderInquirerOld:
-    """
-    查询器
-    """
-
-    def __init__(self, start_date, end_date, date_type, fendian_id_list, scan_code_status_id_list,
-                 reserve_download_record_id=None, file_name=None, is_test_mode=False):
-        """
-        @param start_date: 数据开始时间
-        @param end_date: 数据结束时间
-        @param fendian_id_list: 店铺id列表
-        @param scan_code_status_id_list: 扫码状态 id 列表
-        @param reserve_download_record_id: 预约下载记录id
-        @param is_test_mode: 是否测试模式
-        """
-        self.start_date = start_date
-        self.end_date = end_date
-        self.date_type = date_type
-        self.fendian_id_list = fendian_id_list
-        self.scan_code_status_id_list = scan_code_status_id_list
-        self.reserve_download_record_id = reserve_download_record_id
-        self.file_name = file_name
-        self.is_test_mode = is_test_mode
-        self.queryset = None
-        # self.flow_queryset = None
-        self.data_count = 0
-        self.write_data_list = []
-        self.serializer_ok = False
-        self.serializer_class = None
-
-    def judge_data_type(self):
-        """
-        判断数据类型
-        :return:
-        """
-        if self.date_type == 'order_date':
-            self.serializer_class = ReserveDownloadOrderSerializer
-        elif self.date_type == 'scan_date':
-            self.serializer_class = ReserveDownloadOrderFlowSerializer
-        else:
-            print('数据类型未知')
-            self.date_type = 'unknown'
-
-    def get_query_set(self):
-        """
-        根据条件，获取 OrderOrder 订单查询集
-        @return:
-        """
-        """
-        1，只有下单时间
-        2，只有扫码时间 和 扫码状态
-        """
-        # 1，只有数据时间范围，没有扫码时间范围，也没有扫码状态
-        if self.date_type == 'order_date':
-            order_queryset = OrderOrder.objects.filter(
-                day__gte=self.start_date,
-                day__lte=self.end_date,
-                prefix_id__in=self.fendian_id_list,
-            ).exclude(
-                status='0',
-            ).prefetch_related(
-                'prefix',
-                'category', 'shipper',
-                'zhubo', 'zhuli',
-                'item_status',
-                'play', 'play__changzhang', 'play__banzhang', 'play__shichangzhuanyuan', 'play__zhuli2',
-                'play__zhuli3', 'play__zhuli4', 'play__changkong', 'play__changkong1',
-                'play__changkong2', 'play__changkong3', 'play__kefu1', 'play__kefu2',
-                'play__kefu3', 'play__kefu4',
-                'rel_to_taobao_order', 'rel_to_taobao_order__taobaoorder',
-                'scan_code_flows'
-            )
-            self.queryset = order_queryset
-
-        # 2 只有扫码时间范围，和 扫码状态
-        if self.date_type == 'scan_date':
-            order_flow_qs = OrderFlow.objects.filter(
-                created_time__date__gte=self.start_date,
-                created_time__date__lte=self.end_date,
-                status__in=self.scan_code_status_id_list,
-                order__prefix_id__in=self.fendian_id_list,
-            ).prefetch_related(
-                'order', 'order__prefix', 'order__category', 'order__shipper', 'order__zhubo', 'order__zhuli',
-                'order__item_status', 'order__play', 'order__play__changzhang', 'order__play__banzhang',
-                'order__play__shichangzhuanyuan', 'order__play__zhuli2', 'order__play__zhuli3', 'order__play__zhuli4',
-                'order__play__changkong', 'order__play__changkong1', 'order__play__changkong2', 'order__play__changkong3',
-                'order__play__kefu1', 'order__play__kefu2', 'order__play__kefu3', 'order__play__kefu4',
-                'order__rel_to_taobao_order', 'order__rel_to_taobao_order__taobaoorder',
-                'order__scan_code_flows'
-            )
-            self.queryset = order_flow_qs
-
-    def get_data_count(self):
-        """
-        获取数据数量
-        @return:
-        """
-
-        self.data_count = self.queryset.count()
-
-    def exec_serializer(self):
-        """
-        执行序列化
-        @return:
-        """
-        ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=4)
-        try:
-
-            data = self.serializer_class(self.queryset, many=True).data
-            self.write_data_list = data
-            self.serializer_ok = True
-        except Exception as e:
-            ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=6, task_result=str(e), is_success=False)
-            self.write_data_list = []
-            self.serializer_ok = False
-
-    def gen_excel(self):
-        """
-        生成 excel
-        @return:
-        """
-        if not self.serializer_ok:
-            return False
-        ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=5)
-        try:
-            LargeDataExport(data_list=self.write_data_list, file_name=self.file_name).save()
-            ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=7, is_success=True)
-            return
-        except Exception as e:
-            ReserveDownload.objects.filter(id=self.reserve_download_record_id).update(task_status=8, task_result=str(e), is_success=False)
-            return
-
-    def exec(self):
-        # 判断数据类型
-        self.judge_data_type()
-        if self.date_type == 'unknown':
-            ReserveDownload.objects.filter(
-                id=self.reserve_download_record_id
-            ).update(task_status=6, task_result='数据类型错误', is_success=False)
-            return False
-        # 获取查询集
-        self.get_query_set()
-        # 获取数据数量
-        self.get_data_count()
-        ReserveDownload.objects.filter(
-            id=self.reserve_download_record_id
-        ).update(
-            data_count=self.data_count
-        )
-        # 检查数据数量
-        if self.data_count > 50000:
-            ReserveDownload.objects.filter(
-                id=self.reserve_download_record_id
-            ).update(task_status=6, task_result='数据量超过50000条，禁止导出，请修改筛选条件', is_success=False)
-            return False
-        if self.data_count == 0:
-            ReserveDownload.objects.filter(
-                id=self.reserve_download_record_id
-            ).update(task_status=6, task_result='数据量为0，请修改筛选条件', is_success=False)
-            return False
-        # 序列化
-
-        self.exec_serializer()
-        if not self.serializer_ok:
-            return False
-        # 生成 excel
-        self.gen_excel()
-
-    def only_check_count(self):
-        self.judge_data_type()
-        if self.date_type == 'unknown':
-            return False, '根据筛选条件判断数据类型错误，无法校验数量'
-        self.get_query_set()
-        self.get_data_count()
-        if self.data_count > 50000:
-            return False, f'数据量为{self.data_count}, 超过50000条，禁止导出，请修改筛选条件'
-        if self.data_count == 0:
-            return False, '数据量为0，请修改筛选条件'
-        return True, f'数据量为{self.data_count}'
+from django.db.models import Max, OuterRef, Subquery
 
 
 class ReserveDownloadOrderInquirer:
@@ -236,48 +56,36 @@ class ReserveDownloadOrderInquirer:
                 'rel_to_taobao_order', 'rel_to_taobao_order__taobaoorder',
                 'scan_code_flows'
             )
-            print('下单日期yyy', order_queryset.count())
-            # 先判断 需要从 OrderFlow 逆向查询到 OrderOrder 的条件： scanner_id_list 扫码人， scan_code_status_id_list 扫码状态，
-            need_reverse_query = False  # 是否需要逆向查询
-            order_flow_qs = OrderFlow.objects.filter(
-                order__in=order_queryset
-            )
+
             if scan_code_status_id_list:
                 print('有扫码状态', scan_code_status_id_list)
-                # 有扫码状态的情况
-                need_reverse_query = True
-                order_flow_qs = order_flow_qs.filter(
-                    status__id__in=scan_code_status_id_list,
-                    order__in=order_queryset
-                ).prefetch_related(
-                    'order', 'order__prefix', 'order__category', 'order__shipper', 'order__zhubo', 'order__zhuli',
-                    'order__item_status', 'order__play', 'order__play__changzhang', 'order__play__banzhang',
-                    'order__play__shichangzhuanyuan', 'order__play__zhuli2', 'order__play__zhuli3', 'order__play__zhuli4',
-                    'order__play__changkong', 'order__play__changkong1', 'order__play__changkong2', 'order__play__changkong3',
-                    'order__play__kefu1', 'order__play__kefu2', 'order__play__kefu3', 'order__play__kefu4', 'order__play__classs',
-                    'order__rel_to_taobao_order', 'order__rel_to_taobao_order__taobaoorder',
-                    'order__scan_code_flows', 'owner', 'status',
-                )
+                # exclude_order_id_list = []
+                # # 有扫码状态的情况
+                # for order_obj in order_queryset:
+                #     newest_flow = ReserveDownloadOrderInquirer.get_newest_flow_of_order(order_obj)
+                #     if not newest_flow:
+                #         exclude_order_id_list.append(order_obj.id)
+                #         continue
+                #     if newest_flow.status_id not in scan_code_status_id_list:
+                #         exclude_order_id_list.append(order_obj.id)
+                # order_queryset = order_queryset.exclude(
+                #     id__in=exclude_order_id_list
+                # )
+                newest_orderflow_status_subquery = OrderFlow.objects.filter(order=OuterRef('pk')).order_by('-created_time').values('status_id')[:1]
+                order_queryset = order_queryset.annotate(
+                    newest_flow_status_id=Subquery(newest_orderflow_status_subquery)
+                ).filter(newest_flow_status_id__in=scan_code_status_id_list)
+
             if scanner_id_list:
                 # 有扫码人的情况
                 print('有扫码人', scanner_id_list)
-                need_reverse_query = True
-                order_flow_qs = order_flow_qs.filter(
+
+                order_flow_qs = OrderFlow.objects.filter(
                     owner__id__in=scanner_id_list,
                     order__in=order_queryset
-                ).prefetch_related(
-                    'order', 'order__prefix', 'order__category', 'order__shipper', 'order__zhubo', 'order__zhuli',
-                    'order__item_status', 'order__play', 'order__play__changzhang', 'order__play__banzhang',
-                    'order__play__shichangzhuanyuan', 'order__play__zhuli2', 'order__play__zhuli3', 'order__play__zhuli4',
-                    'order__play__changkong', 'order__play__changkong1', 'order__play__changkong2', 'order__play__changkong3',
-                    'order__play__kefu1', 'order__play__kefu2', 'order__play__kefu3', 'order__play__kefu4', 'order__play__classs',
-                    'order__rel_to_taobao_order', 'order__rel_to_taobao_order__taobaoorder',
-                    'order__scan_code_flows', 'owner', 'status',
-                )
-            if need_reverse_query:
-                print('需要逆向')
+                ).values_list('order_id', flat=True)
                 order_queryset = order_queryset.filter(
-                    id__in=order_flow_qs.values_list('order_id', flat=True)
+                    id__in=order_flow_qs
                 )
 
         elif date_type == 'scan_date':
@@ -1449,17 +1257,6 @@ class OrderInquireByCode:
         # 5， 生成 excel
         self.gen_excel()
 
-
-class TestInquire:
-
-    def __init__(self, num):
-        self.num = num
-        self.queryset = None
-        self.data_count = 0
-        print('TestInquire 实例化', self.num)
-
-    def exec(self):
-        print('exec 方法执行', self.num)
 
 if __name__ == '__main__':
     query = {
