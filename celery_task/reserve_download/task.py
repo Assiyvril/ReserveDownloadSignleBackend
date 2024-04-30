@@ -34,11 +34,19 @@ def scheduled_download_by_params(query_param_dict, reserve_download_record_id, f
         task_exec_start_time=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         task_status=3,
     )
-    ReserveDownloadOrderInquirer(
-        query_param_dict=query_param_dict,
-        reserve_download_record_id=reserve_download_record_id,
-        file_name=file_name,
-    ).exec()
+    try:
+        ReserveDownloadOrderInquirer(
+            query_param_dict=query_param_dict,
+            reserve_download_record_id=reserve_download_record_id,
+            file_name=file_name,
+        ).exec()
+    except Exception as e:
+        ReserveDownload.objects.filter(
+            id=reserve_download_record_id
+        ).update(
+            task_result=str(e),
+        )
+
     ReserveDownload.objects.filter(
         id=reserve_download_record_id
     ).update(
@@ -64,14 +72,21 @@ def scheduled_download_by_upload_excel(parse_excel_data, available_fendian_id_li
         task_exec_start_time=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         task_status=3,
     )
-    OrderInquireByCode(
-        parse_order_code_list=parse_excel_data,
-        available_fendian_id_list=available_fendian_id_list,
-        order_code_mode=order_code_mode,
-        is_history=is_history,
-        reserve_download_record_id=reserve_download_record_id,
-        file_name=file_name,
-    ).exec()
+    try:
+        OrderInquireByCode(
+            parse_order_code_list=parse_excel_data,
+            available_fendian_id_list=available_fendian_id_list,
+            order_code_mode=order_code_mode,
+            is_history=is_history,
+            reserve_download_record_id=reserve_download_record_id,
+            file_name=file_name,
+        ).exec()
+    except Exception as e:
+        ReserveDownload.objects.filter(
+            id=reserve_download_record_id
+        ).update(
+            task_result=str(e),
+        )
     ReserveDownload.objects.filter(
         id=reserve_download_record_id
     ).update(
