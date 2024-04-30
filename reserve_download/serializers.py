@@ -489,10 +489,10 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
 
     @staticmethod
     def get_newest_order_flow_obj(obj):
-        newest_order_flow_obj_id = obj.orderflow_id
-        if not newest_order_flow_obj_id:
-            return OrderFlow.objects.none()
-        order_flow_obj = OrderFlow.objects.filter(id=newest_order_flow_obj_id).first()
+        # newest_order_flow_obj_id = obj.orderflow_id
+        # if not newest_order_flow_obj_id:
+        #     return OrderFlow.objects.none()
+        order_flow_obj = OrderFlow.objects.filter(order_id=obj.id).order_by('-created_time').first()
         if not order_flow_obj:
             return OrderFlow.objects.none()
         return order_flow_obj
