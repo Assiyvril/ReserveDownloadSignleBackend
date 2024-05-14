@@ -255,10 +255,10 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         if start_date_obj > end_date_obj:
             ret_data['msg'] = '开始时间不能大于结束时间！'
             return ret_data
-        # 时间范围不能超过 65 天
-        if (end_date_obj - start_date_obj).days > 65:
-            ret_data['msg'] = '时间范围不能超过两个月！'
-            return ret_data
+        # # 时间范围不能超过 65 天
+        # if (end_date_obj - start_date_obj).days > 65:
+        #     ret_data['msg'] = '时间范围不能超过两个月！'
+        #     return ret_data
 
         """   构建 fendian_info """
         fendian_info = []
