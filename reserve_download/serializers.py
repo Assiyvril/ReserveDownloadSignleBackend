@@ -114,7 +114,7 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
     other_fee = serializers.FloatField(source='other', read_only=True, help_text='其它', label='其它', default=0)
     duo_fu_jin_e = serializers.FloatField(source='overage', read_only=True, help_text='多付金额', label='多付金额', default=0)
     goods_image_url = serializers.SerializerMethodField(read_only=True, help_text='商品图片地址', label='图片地址')
-    desc = serializers.CharField(read_only=True, help_text='备注', label='备注', default='')
+    seller_memo = serializers.SerializerMethodField(read_only=True, help_text='备注', label='备注')
     auto_status_text = serializers.SerializerMethodField(read_only=True, help_text='自动状态', label='自动状态')
     order_create_time = serializers.DateTimeField(source='created_time', read_only=True, help_text='订单创建时间', label='订单创建时间', format='%Y-%m-%d %H:%M:%S')
     zheng_shu = serializers.SerializerMethodField(read_only=True, help_text='证书', label='证书')
@@ -145,6 +145,13 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
     category_level_4 = serializers.SerializerMethodField(read_only=True, help_text='分类四级', label='分类四级')
     delivery_time_dead_line = serializers.DateTimeField(source='latestdeliverytime', read_only=True, help_text='最晚发货时间', label='最晚发货时间',
                                                         default=None, format='%Y-%m-%d %H:%M:%S')
+    # 24-06-12
+    shipper_goods_sn = serializers.CharField(source='shipper_itemcode', read_only=True, help_text='货主货品单号')
+    buyer_nick_name = serializers.SerializerMethodField(read_only=True, help_text='客户昵称', label='客户昵称')
+    profit = serializers.SerializerMethodField(read_only=True, help_text='利润', label='利润')
+    za_xiang = serializers.FloatField(source='addlamount3', read_only=True, help_text='杂项支出')
+    guanlian_fendian = serializers.CharField(source='saleprefix.name', read_only=True, help_text='关联店铺')
+    title_goods_sn = serializers.CharField(source='guding_title', read_only=True, help_text='标题货品码')
 
     def get_category_name(self, obj):
         category_obj = obj.category
@@ -516,8 +523,8 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
         @return:
         """
         blank_fields = [
-            '拉新专员', '杂项支出', '销售专员', '转粉专员', '关联店铺', '支付方式', '货主证书', '利润', '扣点调否', '差异扣点', '售后金额',
-            '待结ID', '结扣ID', '结算ID', '成本导入时间', '录单员', '标题货品码', '客户昵称',
+            '拉新专员', '支付方式', '扣点调否', '差异扣点', '售后金额',
+            '待结ID', '结扣ID', '结算ID', '成本导入时间', '录单员',
         ]
         ret = super(ReserveDownloadOrderSerializer, self).to_representation(instance)
         for field in blank_fields:
@@ -576,6 +583,35 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
             total_paid += taobao_obj.p_amount
         return total_paid
 
+    def get_seller_memo(self, obj):
+        taobao_qs = self.get_taobao_order_qs(obj)
+        if not taobao_qs:
+            return ''
+        seller_memo = ''
+        for taobao_obj in taobao_qs:
+            seller_memo += taobao_obj.seller_memo + '；'
+
+        return seller_memo
+
+    def get_buyer_nick_name(self, obj):
+        taobao_qs = self.get_taobao_order_qs(obj)
+        if not taobao_qs:
+            return ''
+        nick_name = ''
+        for taobao_obj in taobao_qs:
+            if taobao_obj.buyer:
+                return taobao_obj.buyer
+        return nick_name
+
+    def get_profit(self, obj):
+        amount = obj.amount
+        shipper_kickback = obj.shipper.kickback
+
+        if amount and shipper_kickback:
+            return amount * shipper_kickback
+        else:
+            return ''
+
     class Meta:
         model = OrderOrder
         fields = [
@@ -586,13 +622,13 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
             'shi_chang_ren_yuan', 'zhu_li_2', 'zhu_li_3', 'zhu_li_4', 'chang_kong_1', 'chang_kong_2', 'chang_kong_3',
             'chang_kong_4', 'ke_fu_1', 'ke_fu_2', 'ke_fu_3', 'ke_fu_4', 'chang_zhang2_name', 'code_scaner', 'total_paid',
             'scan_code_history', 'scan_code_status', 'check_good_status', 'dai_gou_fee', 'zheng_shu_fee', 'sheng_zi_fee', 'he_zi_fee',
-            'other_fee', 'duo_fu_jin_e', 'goods_image_url', 'desc', 'auto_status_text', 'order_create_time', 'zheng_shu',
+            'other_fee', 'duo_fu_jin_e', 'goods_image_url', 'seller_memo', 'auto_status_text', 'order_create_time', 'zheng_shu',
             'fa_huo_ji_lu', 'shipper_memo', 'chang_ci_id', 'ban_ci_time', 'is_print', 'flow_newest_updater',
             'is_presale_order', 'system_status', 'refund_status', 'check_good_category', 'checkgoods_desc',
             'checkgoods_checker', 'checkgoods_time', 'trade_screenshot', 'cost_amount', 'additional_deduction',
             'additional_payment', 'deduction_id', 'refund_amount', 'order_update_time', 'is_add_account',
             'category_level_1', 'category_level_2', 'category_level_3', 'category_level_4', 'delivery_time_dead_line',
-            'desc_shz_gj'
+            'desc_shz_gj', 'shipper_goods_sn', 'buyer_nick_name', 'profit', 'za_xiang', 'guanlian_fendian', 'title_goods_sn'
         ]
 
 
@@ -675,7 +711,7 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
     other_fee = serializers.FloatField(source='order.other', read_only=True, help_text='其它', label='其它', default=0)
     duo_fu_jin_e = serializers.FloatField(source='order.overage', read_only=True, help_text='多付金额', label='多付金额', default=0)
     goods_image_url = serializers.SerializerMethodField(read_only=True, help_text='商品图片地址', label='图片地址')
-    desc = serializers.CharField(read_only=True, help_text='备注', label='备注', default='')
+    seller_memo = serializers.CharField(read_only=True, help_text='备注', label='备注', default='')
     auto_status_text = serializers.SerializerMethodField(read_only=True, help_text='自动状态', label='自动状态')
     order_create_time = serializers.DateTimeField(source='order.created_time', read_only=True, help_text='订单创建时间', label='订单创建时间',
                                                   format='%Y-%m-%d %H:%M:%S')
@@ -710,6 +746,14 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
     delivery_time_dead_line = serializers.DateTimeField(source='order.latestdeliverytime', read_only=True, help_text='最晚发货时间', label='最晚发货时间',
                                                         default=None, format='%Y-%m-%d %H:%M:%S')
     desc_shz_gj = serializers.CharField(source='order.desc_shz_gj', read_only=True, help_text='收货组跟进', label='收货组跟进', default='')
+    # 24-06-12
+    shipper_goods_sn = serializers.CharField(source='order.shipper_itemcode', read_only=True, help_text='货主货品单号')
+    buyer_nick_name = serializers.SerializerMethodField(read_only=True, help_text='客户昵称', label='客户昵称')
+    profit = serializers.SerializerMethodField(read_only=True, help_text='利润', label='利润')
+    za_xiang = serializers.FloatField(source='order.addlamount3', read_only=True, help_text='杂项支出')
+    guanlian_fendian = serializers.CharField(source='order.saleprefix.name', read_only=True, help_text='关联店铺')
+    title_goods_sn = serializers.CharField(source='order.guding_title', read_only=True, help_text='标题货品码')
+
 
     def get_goods_image_url(self, obj):
         qi_de_bao_order_obj = QiDeBaoOrderInfo.objects.filter(order=obj.order).first()
@@ -1055,8 +1099,8 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
         @return:
         """
         blank_fields = [
-            '拉新专员', '杂项支出', '销售专员', '转粉专员', '关联店铺', '支付方式', '货主证书', '利润', '扣点调否', '差异扣点', '售后金额',
-            '待结ID', '结扣ID', '结算ID', '成本导入时间', '录单员', '标题货品码', '客户昵称',
+            '拉新专员', '支付方式', '扣点调否', '差异扣点', '售后金额',
+            '待结ID', '结扣ID', '结算ID', '成本导入时间', '录单员',
         ]
         ret = super(ReserveDownloadOrderFlowSerializer, self).to_representation(instance)
         # ret['扫码状态'] = instance.status.name
@@ -1081,6 +1125,35 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
             total_paid += taobao_obj.p_amount
         return total_paid
 
+    def get_seller_memo(self, obj):
+        taobao_qs = self.get_taobao_order_qs(obj)
+        if not taobao_qs:
+            return ''
+        seller_memo = ''
+        for taobao_obj in taobao_qs:
+            seller_memo += taobao_obj.seller_memo + '；'
+
+        return seller_memo
+
+    def get_buyer_nick_name(self, obj):
+        taobao_qs = self.get_taobao_order_qs(obj)
+        if not taobao_qs:
+            return ''
+        nick_name = ''
+        for taobao_obj in taobao_qs:
+            if taobao_obj.buyer:
+                return taobao_obj.buyer
+        return nick_name
+
+    def get_profit(self, obj):
+        amount = obj.order.amount
+        shipper_kickback = obj.order.shipper.kickback
+
+        if amount and shipper_kickback:
+            return amount * shipper_kickback
+        else:
+            return ''
+
     class Meta:
         model = OrderFlow
         fields = [
@@ -1091,13 +1164,13 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
             'shi_chang_ren_yuan', 'zhu_li_2', 'zhu_li_3', 'zhu_li_4', 'chang_kong_1', 'chang_kong_2', 'chang_kong_3',
             'chang_kong_4', 'ke_fu_1', 'ke_fu_2', 'ke_fu_3', 'ke_fu_4', 'chang_zhang2_name', 'code_scaner', 'total_paid',
             'scan_code_history', 'scan_code_status', 'check_good_status', 'dai_gou_fee', 'zheng_shu_fee', 'sheng_zi_fee', 'he_zi_fee',
-            'other_fee', 'duo_fu_jin_e', 'goods_image_url', 'desc', 'auto_status_text', 'order_create_time', 'zheng_shu',
+            'other_fee', 'duo_fu_jin_e', 'goods_image_url', 'seller_memo', 'auto_status_text', 'order_create_time', 'zheng_shu',
             'fa_huo_ji_lu', 'shipper_memo', 'chang_ci_id', 'ban_ci_time', 'is_print', 'flow_newest_updater',
             'is_presale_order', 'system_status', 'refund_status', 'check_good_category', 'checkgoods_desc',
             'checkgoods_checker', 'checkgoods_time', 'trade_screenshot', 'cost_amount', 'additional_deduction',
             'additional_payment', 'deduction_id', 'refund_amount', 'order_update_time', 'is_add_account',
             'category_level_1', 'category_level_2', 'category_level_3', 'category_level_4', 'delivery_time_dead_line',
-            'desc_shz_gj'
+            'desc_shz_gj', 'shipper_goods_sn', 'buyer_nick_name', 'profit', 'za_xiang', 'guanlian_fendian', 'title_goods_sn'
         ]
 
 
