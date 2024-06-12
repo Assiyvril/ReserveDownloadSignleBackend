@@ -596,31 +596,6 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
         ]
 
 
-class FenDianChoiceListSerializer(serializers.ModelSerializer):
-    """
-    店铺选择列表， id 和 name
-    """
-
-    # 重写name ，name + 平台店铺名
-    name = serializers.SerializerMethodField(help_text='店铺名称', label='店铺名称', read_only=True)
-
-    def get_name(self, obj):
-        """
-        店铺名称
-        """
-        name = obj.name
-        if not name:
-            name = '未知大G店铺名'
-        platform_store_name = obj.platform_store_name
-        if not platform_store_name:
-            platform_store_name = '---'
-        return f'{name}({platform_store_name})'
-
-    class Meta:
-        model = ShopSerialprefix
-        fields = ['id', 'name']
-
-
 class OrderScanCodeStatusChoiceListSerializer(serializers.ModelSerializer):
     """
     订单状态选择列表
@@ -1167,4 +1142,29 @@ class UserFirstNameChoiceListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AccountMyuser
+        fields = ['id', 'name']
+
+
+class FenDianChoiceListSerializer(serializers.ModelSerializer):
+    """
+    店铺选择列表， id 和 name
+    """
+
+    # 重写name ，name + 平台店铺名
+    name = serializers.SerializerMethodField(help_text='店铺名称', label='店铺名称', read_only=True)
+
+    def get_name(self, obj):
+        """
+        店铺名称
+        """
+        name = obj.name
+        if not name:
+            name = '未知大G店铺名'
+        platform_store_name = obj.platform_store_name
+        if not platform_store_name:
+            platform_store_name = '---'
+        return f'{name}({platform_store_name})'
+
+    class Meta:
+        model = ShopSerialprefix
         fields = ['id', 'name']
