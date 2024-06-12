@@ -1131,6 +1131,11 @@ class ShopShipperChoiceListSerializer(serializers.ModelSerializer):
     小货主下拉列表，
     id 和 name
     """
+    name = serializers.SerializerMethodField(read_only=True, help_text='货主名称', label='货主名称')
+
+    def get_name(self, obj):
+        return f'{obj.id}-{obj.name}'
+
     class Meta:
         model = ShopShipper
         fields = ['id', 'name']
