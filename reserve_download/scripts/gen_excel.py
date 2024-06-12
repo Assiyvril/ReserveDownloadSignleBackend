@@ -113,7 +113,7 @@ OFFICIAL_COL_KEYS = [
     'item_status_name', 'flow_newest_updater', 'auto_status_text', 'system_status', 'refund_status',
     'order_create_time', 'goods_image_url', 'trade_screenshot', 'order_update_time', 'delivery_time_dead_line',
     'zheng_shu', 'fa_huo_ji_lu', 'is_print', 'is_add_account', 'is_presale_order', 'additional_deduction', 'additional_payment', 'deduction_id', 'refund_amount',
-    'desc_shz_gj', 'guanlian_fendian', 'title_goods_sn'
+    'desc_shz_gj', 'guanlian_fendian', 'title',
     '拉新专员', 'zhubo_name', 'zhuli_name', '支付方式', 'zheng_shu_fee', '扣点调否', '差异扣点', '售后金额',
     '待结ID', '结扣ID', '结算ID', '成本导入时间', '录单员',
 ]

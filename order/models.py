@@ -157,7 +157,7 @@ class OrderOrder(models.Model):
     # refund_fee = models.FloatField('退款费用', blank=True, null=True)
     latestdeliverytime = models.DateTimeField('最晚发货时间', blank=True, null=True)
 
-    shipper_itemcode = models.CharField(verbose_name='货主货品单号', blank=True, null=True, help_text='货主货品单号')
+    shipper_itemcode = models.CharField(verbose_name='货主货品单号', blank=True, null=True, help_text='货主货品单号', max_length=255)
     addlamount3 = models.FloatField(verbose_name='杂项支出', blank=True, null=True, help_text='杂项支出')
 
     class Meta:

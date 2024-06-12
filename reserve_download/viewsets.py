@@ -619,9 +619,14 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         start_exec_time = datetime.datetime.now()
         print('开始查询', start_exec_time)
         order_qs = OrderOrder.objects.filter(
-            created_time__date__gte='2024-04-01',
-            created_time__date__lte='2024-04-02',
-        )[0:10].prefetch_related(
+            # created_time__date__gte='2024-03-01',
+            # created_time__date__lte='2024-03-10',
+            # saleprefix__id__in=[276, 287, 288]
+            id__in=[18775811, 18774598, 18773299]
+        ).exclude(
+            shipper_itemcode__isnull=True,
+            shipper_itemcode='',
+        )[0:200].prefetch_related(
                 'prefix',
                 'category', 'shipper',
                 'zhubo', 'zhuli',
@@ -631,7 +636,7 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
                 'play__changkong2', 'play__changkong3', 'play__kefu1', 'play__kefu2',
                 'play__kefu3', 'play__kefu4', 'play__creator', 'play__classs',
                 'rel_to_taobao_order', 'rel_to_taobao_order__taobaoorder',
-                'scan_code_flows', 'qdb_orders', 'checkgoodstype',
+                'scan_code_flows', 'qdb_orders', 'checkgoodstype', 'saleprefix',
             )
         flow_qs = OrderFlow.objects.filter(
             order__in=order_qs,
@@ -642,7 +647,7 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
                 'order__play__changkong', 'order__play__changkong1', 'order__play__changkong2', 'order__play__changkong3',
                 'order__play__kefu1', 'order__play__kefu2', 'order__play__kefu3', 'order__play__kefu4', 'order__play__classs',
                 'order__rel_to_taobao_order', 'order__rel_to_taobao_order__taobaoorder',
-                'order__scan_code_flows', 'owner', 'status', 'order__qdb_orders', 'order__checkgoodstype',
+                'order__scan_code_flows', 'owner', 'status', 'order__qdb_orders', 'order__checkgoodstype', 'order__saleprefix'
             )
         print('订单数量:', order_qs.count(), '流程数量:', flow_qs.count())
         rep_data['result'] = True
@@ -654,8 +659,8 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         rep_data['use_time'] = str(end_exec_time - start_exec_time)
         # 测试生成 excel
         from reserve_download.scripts.gen_excel import LargeDataExport
-        order_data_file_name = 'test_order_data_0426.xlsx'
-        flow_data_file_name = 'test_flow_data_0426.xlsx'
+        order_data_file_name = 'test_order_data_0612_5.xlsx'
+        flow_data_file_name = 'test_flow_data_0612_5.xlsx'
         LargeDataExport(data_list=rep_data['order_data'], file_name=order_data_file_name).save()
         LargeDataExport(data_list=rep_data['flow_data'], file_name=flow_data_file_name).save()
         return Response(rep_data)

@@ -1,3 +1,5 @@
+import decimal
+
 from rest_framework import serializers
 
 from commodity_category.models import ShopCategory
@@ -151,7 +153,6 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
     profit = serializers.SerializerMethodField(read_only=True, help_text='利润', label='利润')
     za_xiang = serializers.FloatField(source='addlamount3', read_only=True, help_text='杂项支出')
     guanlian_fendian = serializers.CharField(source='saleprefix.name', read_only=True, help_text='关联店铺')
-    title_goods_sn = serializers.CharField(source='guding_title', read_only=True, help_text='标题货品码')
 
     def get_category_name(self, obj):
         category_obj = obj.category
@@ -608,7 +609,7 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
         shipper_kickback = obj.shipper.kickback
 
         if amount and shipper_kickback:
-            return amount * shipper_kickback
+            return amount * decimal.Decimal(shipper_kickback)
         else:
             return ''
 
@@ -628,7 +629,7 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
             'checkgoods_checker', 'checkgoods_time', 'trade_screenshot', 'cost_amount', 'additional_deduction',
             'additional_payment', 'deduction_id', 'refund_amount', 'order_update_time', 'is_add_account',
             'category_level_1', 'category_level_2', 'category_level_3', 'category_level_4', 'delivery_time_dead_line',
-            'desc_shz_gj', 'shipper_goods_sn', 'buyer_nick_name', 'profit', 'za_xiang', 'guanlian_fendian', 'title_goods_sn'
+            'desc_shz_gj', 'shipper_goods_sn', 'buyer_nick_name', 'profit', 'za_xiang', 'guanlian_fendian',
         ]
 
 
@@ -752,7 +753,7 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
     profit = serializers.SerializerMethodField(read_only=True, help_text='利润', label='利润')
     za_xiang = serializers.FloatField(source='order.addlamount3', read_only=True, help_text='杂项支出')
     guanlian_fendian = serializers.CharField(source='order.saleprefix.name', read_only=True, help_text='关联店铺')
-    title_goods_sn = serializers.CharField(source='order.guding_title', read_only=True, help_text='标题货品码')
+    # title_goods_sn = serializers.CharField(source='order.guding_title', read_only=True, help_text='标题货品码')
 
 
     def get_goods_image_url(self, obj):
@@ -1150,7 +1151,7 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
         shipper_kickback = obj.order.shipper.kickback
 
         if amount and shipper_kickback:
-            return amount * shipper_kickback
+            return amount * decimal.Decimal(shipper_kickback)
         else:
             return ''
 
@@ -1170,7 +1171,7 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
             'checkgoods_checker', 'checkgoods_time', 'trade_screenshot', 'cost_amount', 'additional_deduction',
             'additional_payment', 'deduction_id', 'refund_amount', 'order_update_time', 'is_add_account',
             'category_level_1', 'category_level_2', 'category_level_3', 'category_level_4', 'delivery_time_dead_line',
-            'desc_shz_gj', 'shipper_goods_sn', 'buyer_nick_name', 'profit', 'za_xiang', 'guanlian_fendian', 'title_goods_sn'
+            'desc_shz_gj', 'shipper_goods_sn', 'buyer_nick_name', 'profit', 'za_xiang', 'guanlian_fendian',
         ]
 
 
