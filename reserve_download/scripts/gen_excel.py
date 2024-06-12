@@ -99,7 +99,7 @@ OFFICIAL_HEADER = [
 ]
 
 OFFICIAL_COL_KEYS = [
-    'fen_dian_name', 'sn', 'title', 'order_day', 'taobao_tbno', 'category_name', 'quantity', 'desc', 'itemcode',
+    'fen_dian_name', 'sn', 'title', 'order_day', 'taobao_tbno', 'category_name', 'quantity', 'seller_memo', 'itemcode',
     'amount', 'finance_amount', 'yhq', 'yunfei',
     'dai_gou_fee', 'zheng_shu_fee', 'sheng_zi_fee', 'he_zi_fee', 'other_fee',
     'total_paid', 'duo_fu_jin_e', 'cost_amount',
