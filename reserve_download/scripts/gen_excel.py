@@ -80,10 +80,10 @@ EXPORT_DIR = os.path.join(settings.MEDIA_ROOT, 'Export_Excel', 'Reserve_Download
 
 # 正式的表头，调整了顺序
 OFFICIAL_HEADER = [
-    '店铺', '单号', '标题', '下单日期', '电商订单', '货品', '数量', '备注', '货品码',
-    '金额', '固定货款', '优惠券', '运费',
-    '代购费', '证书费', '绳子费', '盒子费', '其它费用',
-    '实付金额', '多付金额', '成本金额',
+    '店铺', '单号', '标题', '下单日期', '电商订单', '货品', '数量', '备注', '货品码', '货主货品单号',
+    '金额', '固定货款', '优惠券', '运费', '客户昵称',
+    '代购费', '证书费', '绳子费', '盒子费', '其它费用', '杂项支出',
+    '实付金额', '多付金额', '成本金额', '利润',
     '扣点', '应付商家',  '货主', '货主ID', '货主备注',
     '订单付款时间', '链接类型', '扫码状态', '扫码时间', '扫码人', '扫码历史',
     '主播', '助理', '厂长', '直播方式', '班次', '班次时间', '班次长', '场次ID', '市场人员', '助理2', '助理3', '助理4',
@@ -93,16 +93,16 @@ OFFICIAL_HEADER = [
     '流程状态', '流程最近更新者', '自动状态', '系统状态', '退款状态',
     '订单创建时间', '图片地址', '交易截图', '订单更新时间', '最晚发货时间',
     '证书', '发货记录', '是否打印', '是否加帐', '预售订单', '附加扣款', '附加补款', '调扣ID', '退款金额',
-    '收货组跟进',
-    '拉新专员', '杂项支出', '销售专员', '转粉专员', '关联店铺', '支付方式', '货主证书', '利润', '扣点调否', '差异扣点', '售后金额',
-    '待结ID', '结扣ID', '结算ID', '成本导入时间', '录单员', '标题货品码', '客户昵称',
+    '收货组跟进', '关联店铺', '标题货品码',
+    '拉新专员', '销售专员', '转粉专员', '支付方式', '货主证书', '扣点调否', '差异扣点', '售后金额',
+    '待结ID', '结扣ID', '结算ID', '成本导入时间', '录单员',
 ]
 
 OFFICIAL_COL_KEYS = [
-    'fen_dian_name', 'sn', 'title', 'order_day', 'taobao_tbno', 'category_name', 'quantity', 'seller_memo', 'itemcode',
-    'amount', 'finance_amount', 'yhq', 'yunfei',
-    'dai_gou_fee', 'zheng_shu_fee', 'sheng_zi_fee', 'he_zi_fee', 'other_fee',
-    'total_paid', 'duo_fu_jin_e', 'cost_amount',
+    'fen_dian_name', 'sn', 'title', 'order_day', 'taobao_tbno', 'category_name', 'quantity', 'seller_memo', 'itemcode', 'shipper_goods_sn',
+    'amount', 'finance_amount', 'yhq', 'yunfei', 'buyer_nick_name',
+    'dai_gou_fee', 'zheng_shu_fee', 'sheng_zi_fee', 'he_zi_fee', 'other_fee', 'za_xiang',
+    'total_paid', 'duo_fu_jin_e', 'cost_amount', 'profit',
     'kickback', 'should_pay_merchant', 'shipper_name', 'shipper_id', 'shipper_memo',
     'taobao_order_pay_time', 'link_type', 'scan_code_status', 'scan_code_time', 'code_scaner', 'scan_code_history',
     'zhubo_name', 'zhuli_name', 'chang_zhang_name', 'zhibo_type_text', 'ban_ci', 'ban_ci_time', 'ban_ci_zhang', 'chang_ci_id', 'shi_chang_ren_yuan',
@@ -113,9 +113,9 @@ OFFICIAL_COL_KEYS = [
     'item_status_name', 'flow_newest_updater', 'auto_status_text', 'system_status', 'refund_status',
     'order_create_time', 'goods_image_url', 'trade_screenshot', 'order_update_time', 'delivery_time_dead_line',
     'zheng_shu', 'fa_huo_ji_lu', 'is_print', 'is_add_account', 'is_presale_order', 'additional_deduction', 'additional_payment', 'deduction_id', 'refund_amount',
-    'desc_shz_gj',
-    '拉新专员', '杂项支出', '销售专员', '转粉专员', '关联店铺', '支付方式', '货主证书', '利润', '扣点调否', '差异扣点', '售后金额',
-    '待结ID', '结扣ID', '结算ID', '成本导入时间', '录单员', '标题货品码', '客户昵称',
+    'desc_shz_gj', 'guanlian_fendian', 'title_goods_sn'
+    '拉新专员', 'zhubo_name', 'zhuli_name', '支付方式', 'zheng_shu_fee', '扣点调否', '差异扣点', '售后金额',
+    '待结ID', '结扣ID', '结算ID', '成本导入时间', '录单员',
 ]
 
 
