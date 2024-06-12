@@ -105,6 +105,8 @@ class OrderOrder(models.Model):
                                 verbose_name='店铺', related_name='n_orders')
     prefix = models.ForeignKey(ShopSerialprefix, models.DO_NOTHING, blank=True, null=True, verbose_name='店铺(旧)',
                                related_name='o_orders', db_column='prefix_id')
+    saleprefix = models.ForeignKey(ShopSerialprefix, models.DO_NOTHING, blank=True, null=True, verbose_name='关联店铺',
+                                    related_name='guanlian_orders', db_column='saleprefix_id')
     zhubo = models.ForeignKey(AccountMyuser, models.DO_NOTHING, related_name='oo_zhubo', verbose_name='主播')
     creator = models.ForeignKey(AccountMyuser, models.DO_NOTHING, related_name='oo_creator', verbose_name='创建人')
     shipper = models.ForeignKey(ShopShipper, models.DO_NOTHING, verbose_name='货主', db_column='shipper_id')
@@ -154,6 +156,9 @@ class OrderOrder(models.Model):
     activitykick_id = models.IntegerField('调扣ID', blank=True, null=True)
     # refund_fee = models.FloatField('退款费用', blank=True, null=True)
     latestdeliverytime = models.DateTimeField('最晚发货时间', blank=True, null=True)
+
+    shipper_itemcode = models.CharField(verbose_name='货主货品单号', blank=True, null=True, help_text='货主货品单号')
+    addlamount3 = models.FloatField(verbose_name='杂项支出', blank=True, null=True, help_text='杂项支出')
 
     class Meta:
         managed = False
