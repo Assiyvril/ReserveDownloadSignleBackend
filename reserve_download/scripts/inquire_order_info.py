@@ -54,7 +54,7 @@ class ReserveDownloadOrderInquirer:
                 'play__changkong2', 'play__changkong3', 'play__kefu1', 'play__kefu2',
                 'play__kefu3', 'play__kefu4',
                 'rel_to_taobao_order', 'rel_to_taobao_order__taobaoorder',
-                'scan_code_flows'
+                'scan_code_flows', 'qdb_orders', 'checkgoodstype', 'saleprefix',
             )
 
             if scan_code_status_id_list:
@@ -101,7 +101,7 @@ class ReserveDownloadOrderInquirer:
                     'order__play__changkong', 'order__play__changkong1', 'order__play__changkong2', 'order__play__changkong3',
                     'order__play__kefu1', 'order__play__kefu2', 'order__play__kefu3', 'order__play__kefu4', 'order__play__classs',
                     'order__rel_to_taobao_order', 'order__rel_to_taobao_order__taobaoorder',
-                    'order__scan_code_flows', 'owner', 'status',
+                    'order__scan_code_flows', 'owner', 'status', 'order__qdb_orders', 'order__checkgoodstype', 'order__saleprefix',
                 )
             if scan_code_status_id_list:
                 # 有扫码状态的情况
