@@ -630,6 +630,7 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
             'additional_payment', 'deduction_id', 'refund_amount', 'order_update_time', 'is_add_account',
             'category_level_1', 'category_level_2', 'category_level_3', 'category_level_4', 'delivery_time_dead_line',
             'desc_shz_gj', 'shipper_goods_sn', 'buyer_nick_name', 'profit', 'za_xiang', 'guanlian_fendian',
+            'old_costamount', 'refund_quantity',
         ]
 
 
@@ -754,6 +755,8 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
     za_xiang = serializers.FloatField(source='order.addlamount3', read_only=True, help_text='杂项支出')
     guanlian_fendian = serializers.CharField(source='order.saleprefix.name', read_only=True, help_text='关联店铺')
     # title_goods_sn = serializers.CharField(source='order.guding_title', read_only=True, help_text='标题货品码')
+    old_costamount = serializers.FloatField(source='order.old_costamount', read_only=True, help_text='上传成本价')
+    refund_quantity = serializers.IntegerField(source='order.refund_quantity', read_only=True, help_text='退款数量')
 
 
     def get_goods_image_url(self, obj):
@@ -1172,6 +1175,7 @@ class ReserveDownloadOrderFlowSerializer(serializers.ModelSerializer):
             'additional_payment', 'deduction_id', 'refund_amount', 'order_update_time', 'is_add_account',
             'category_level_1', 'category_level_2', 'category_level_3', 'category_level_4', 'delivery_time_dead_line',
             'desc_shz_gj', 'shipper_goods_sn', 'buyer_nick_name', 'profit', 'za_xiang', 'guanlian_fendian',
+            'old_costamount', 'refund_quantity',
         ]
 
 

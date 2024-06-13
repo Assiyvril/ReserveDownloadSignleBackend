@@ -159,6 +159,8 @@ class OrderOrder(models.Model):
 
     shipper_itemcode = models.CharField(verbose_name='货主货品单号', blank=True, null=True, help_text='货主货品单号', max_length=255)
     addlamount3 = models.FloatField(verbose_name='杂项支出', blank=True, null=True, help_text='杂项支出')
+    old_costamount = models.FloatField(verbose_name='上传成本价', blank=True, null=True, help_text='上传成本价')
+    refund_quantity = models.IntegerField(verbose_name='退款数量', blank=True, null=True, help_text='退款数量')
 
     class Meta:
         managed = False
