@@ -93,7 +93,7 @@ OFFICIAL_HEADER = [
     '流程状态', '流程最近更新者', '自动状态', '系统状态', '退款状态', '退款数量',
     '订单创建时间', '图片地址', '交易截图', '订单更新时间', '最晚发货时间',
     '证书', '发货记录', '是否打印', '是否加帐', '预售订单', '附加扣款', '附加补款', '调扣ID', '退款金额',
-    '收货组跟进', '关联店铺', '标题货品码',
+    '收货组跟进', '关联店铺',
     '拉新专员', '销售专员', '转粉专员', '支付方式', '货主证书', '扣点调否', '差异扣点', '售后金额',
     '待结ID', '结扣ID', '结算ID', '成本导入时间', '录单员',
 ]
@@ -113,7 +113,7 @@ OFFICIAL_COL_KEYS = [
     'item_status_name', 'flow_newest_updater', 'auto_status_text', 'system_status', 'refund_status', 'refund_quantity',
     'order_create_time', 'goods_image_url', 'trade_screenshot', 'order_update_time', 'delivery_time_dead_line',
     'zheng_shu', 'fa_huo_ji_lu', 'is_print', 'is_add_account', 'is_presale_order', 'additional_deduction', 'additional_payment', 'deduction_id', 'refund_amount',
-    'desc_shz_gj', 'guanlian_fendian', 'title',
+    'desc_shz_gj', 'guanlian_fendian',
     '拉新专员', 'zhubo_name', 'zhuli_name', '支付方式', 'zheng_shu_fee', '扣点调否', '差异扣点', '售后金额',
     '待结ID', '结扣ID', '结算ID', '成本导入时间', '录单员',
 ]
