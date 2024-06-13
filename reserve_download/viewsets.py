@@ -619,13 +619,14 @@ class ReserveDownloadViewSet(viewsets.ModelViewSet):
         start_exec_time = datetime.datetime.now()
         print('开始查询', start_exec_time)
         order_qs = OrderOrder.objects.filter(
-            # created_time__date__gte='2024-03-01',
-            # created_time__date__lte='2024-03-10',
+            created_time__date__gte='2024-01-01',
+            created_time__date__lte='2024-06-10',
+            # saleprefix__isnull=False,
+            old_costamount__isnull=False,
+            refund_quantity__isnull=False,
+            shipper_itemcode__isnull=False,
             # saleprefix__id__in=[276, 287, 288]
-            id__in=[18775811, 18774598, 18773299]
-        ).exclude(
-            shipper_itemcode__isnull=True,
-            shipper_itemcode='',
+            # id__in=[18775811, 18774598, 18773299]
         )[0:200].prefetch_related(
                 'prefix',
                 'category', 'shipper',
