@@ -590,7 +590,8 @@ class ReserveDownloadOrderSerializer(serializers.ModelSerializer):
             return ''
         seller_memo = ''
         for taobao_obj in taobao_qs:
-            seller_memo += taobao_obj.seller_memo + '；'
+            if taobao_obj.seller_memo:
+                seller_memo += taobao_obj.seller_memo + '；'
 
         return seller_memo
 
